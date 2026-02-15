@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Stav & Chen — Find Your Photos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="couple-photo">
+        <div class="heart-frame">
+          <img src="couple.jpg" alt="Stav & Chen" class="couple-img">
+        </div>
+      </div>
+      <h1 class="couple-names">Stav & Chen</h1>
+      <p class="subtitle">Find your photos from our wedding</p>
+    </header>
+
+    <!-- Steps -->
+    <section class="steps" id="stepsSection">
+      <div class="step">
+        <span class="step-number">1</span>
+        <span class="step-text">Take a selfie or upload a photo</span>
+      </div>
+      <div class="step">
+        <span class="step-number">2</span>
+        <span class="step-text">Our AI will find you in the wedding photos</span>
+      </div>
+      <div class="step">
+        <span class="step-number">3</span>
+        <span class="step-text">Save your photos to keep forever</span>
+      </div>
+    </section>
+
+    <!-- Camera Section -->
+    <section class="camera-section" id="cameraSection">
+      <div class="camera-container" id="cameraContainer" style="display:none;">
+        <video id="cameraPreview" autoplay playsinline muted></video>
+        <button class="capture-btn" id="captureBtn" aria-label="Take photo">
+          <span class="capture-btn-inner"></span>
+        </button>
+        <button class="switch-camera-btn" id="switchCameraBtn" aria-label="Switch camera">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 16V4H8l-4 4"/><path d="M4 8v12h12l4-4"/><path d="M16 16l4-4"/><path d="M4 8l4-4"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="preview-container" id="previewContainer" style="display:none;">
+        <img id="previewImage" alt="Your selfie preview">
+        <div class="preview-actions">
+          <button class="btn btn-secondary" id="retakeBtn">Retake</button>
+          <button class="btn btn-primary" id="findPhotosBtn">Find My Photos</button>
+        </div>
+      </div>
+
+      <div class="action-buttons" id="actionButtons">
+        <button class="btn btn-primary btn-large" id="takeSelfieBtn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          Take a Selfie
+        </button>
+        <label class="btn btn-secondary btn-large" id="uploadLabel">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Upload a Photo
+          <input type="file" id="uploadInput" accept="image/*" hidden>
+        </label>
+      </div>
+    </section>
+
+    <!-- Loading -->
+    <section class="loading-section" id="loadingSection" style="display:none;">
+      <div class="loading-animation">
+        <div class="loading-heart">
+          <svg viewBox="0 0 60 55" class="loading-heart-svg">
+            <path d="M30,50 C18,38 0,30 0,15 C0,6 6,0 15,0 C21,0 27,4.5 30,10.5 C33,4.5 39,0 45,0 C54,0 60,6 60,15 C60,30 42,38 30,50Z" fill="#e8a0a0"/>
+          </svg>
+        </div>
+      </div>
+      <p class="loading-text">Searching through wedding photos...</p>
+      <p class="loading-subtext">This may take a moment</p>
+    </section>
+
+    <!-- Results -->
+    <section class="results-section" id="resultsSection" style="display:none;">
+      <div class="results-header">
+        <h2 id="resultsTitle"></h2>
+        <p id="resultsSubtitle"></p>
+      </div>
+
+      <div class="results-actions" id="resultsActions" style="display:none;">
+        <button class="btn btn-primary" id="saveAllBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span id="saveAllText">Save All Photos</span>
+        </button>
+      </div>
+
+      <div class="photo-grid" id="photoGrid"></div>
+
+      <button class="btn btn-secondary btn-large" id="tryAgainBtn" style="margin-top:1.5rem;">
+        Try Another Photo
+      </button>
+    </section>
+
+    <!-- Canvas for capture (hidden) -->
+    <canvas id="captureCanvas" style="display:none;"></canvas>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
