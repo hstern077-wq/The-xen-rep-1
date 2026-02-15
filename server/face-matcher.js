@@ -5,6 +5,7 @@ const path = require("path");
 
 const MODELS_DIR = path.join(__dirname, "..", "models");
 const INDEX_FILE = path.join(__dirname, ".face-index.json");
+const INDEX_BIN = path.join(__dirname, ".face-index.bin");
 
 let detSession = null;
 let recSession = null;
@@ -191,6 +192,46 @@ async function detectFaces(imageBuffer) {
 }
 
 function loadIndex() {
+  // Try binary format first (much smaller, faster to load)
+  try {
+    if (fs.existsSync(INDEX_BIN)) {
+      const zlib = require("zlib");
+      const compressed = fs.readFileSync(INDEX_BIN);
+      const raw = zlib.gunzipSync(compressed);
+      let offset = 0;
+
+      const entryCount = raw.readUInt32LE(offset);
+      offset += 4;
+
+      const entries = [];
+      for (let i = 0; i < entryCount; i++) {
+        const nameLen = raw.readUInt16LE(offset);
+        offset += 2;
+        const photoFile = raw.toString("utf8", offset, offset + nameLen);
+        offset += nameLen;
+
+        const descCount = raw.readUInt16LE(offset);
+        offset += 2;
+
+        const descriptors = [];
+        for (let j = 0; j < descCount; j++) {
+          const desc = new Float32Array(512);
+          for (let k = 0; k < 512; k++) {
+            desc[k] = raw.readFloatLE(offset);
+            offset += 4;
+          }
+          descriptors.push(desc);
+        }
+        entries.push({ photoFile, descriptors });
+      }
+      console.log(`  Loaded binary index: ${entries.length} entries`);
+      return entries;
+    }
+  } catch (err) {
+    console.error("Error loading binary index:", err.message);
+  }
+
+  // Fallback to JSON format
   try {
     if (fs.existsSync(INDEX_FILE)) {
       const data = JSON.parse(fs.readFileSync(INDEX_FILE, "utf8"));
