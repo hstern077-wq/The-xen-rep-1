@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+output/*.png
+output/*.html
+output/cron.log
+output/latest.png
