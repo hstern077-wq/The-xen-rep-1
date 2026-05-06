@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionManifest
+  Version="7.0"
+  ExtensionBundleId="com.ai.motionhub"
+  ExtensionBundleVersion="1.0.0"
+  ExtensionBundleName="AI Motion Hub"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <ExtensionList>
+    <Extension Id="com.ai.motionhub" Version="1.0.0"/>
+  </ExtensionList>
+
+  <ExecutionEnvironment>
+    <HostList>
+      <!-- Premiere Pro 2024+ (v14.0) and later -->
+      <Host Name="PPRO" Version="14.0"/>
+    </HostList>
+    <LocaleList>
+      <Locale Code="All"/>
+    </LocaleList>
+    <RequiredRuntimeList>
+      <RequiredRuntime Name="CSXS" Version="11.0"/>
+    </RequiredRuntimeList>
+  </ExecutionEnvironment>
+
+  <DispatchInfoList>
+    <Extension Id="com.ai.motionhub">
+      <DispatchInfo>
+        <Resources>
+          <MainPath>./index.html</MainPath>
+          <ScriptPath>./jsx/host.jsx</ScriptPath>
+          <CEFCommandLine>
+            <Parameter>--allow-file-access-from-files</Parameter>
+            <Parameter>--allow-running-insecure-content</Parameter>
+            <Parameter>--enable-nodejs</Parameter>
+          </CEFCommandLine>
+        </Resources>
+
+        <Lifecycle>
+          <AutoVisible>true</AutoVisible>
+        </Lifecycle>
+
+        <UI>
+          <Type>Panel</Type>
+          <Menu>AI Motion Hub</Menu>
+          <Geometry>
+            <Size>
+              <Height>680</Height>
+              <Width>400</Width>
+            </Size>
+            <MinSize>
+              <Height>500</Height>
+              <Width>340</Width>
+            </MinSize>
+            <MaxSize>
+              <Height>1200</Height>
+              <Width>600</Width>
+            </MaxSize>
+          </Geometry>
+          <Icons>
+            <Icon Type="Normal">./icons/icon_normal.png</Icon>
+            <Icon Type="RollOver">./icons/icon_hover.png</Icon>
+            <Icon Type="DarkNormal">./icons/icon_normal.png</Icon>
+            <Icon Type="DarkRollOver">./icons/icon_hover.png</Icon>
+          </Icons>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+  </DispatchInfoList>
+
+</ExtensionManifest>
