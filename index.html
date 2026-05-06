@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="he" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hebrew Subtitle Master</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── Header ── -->
+    <div class="panel-header">
+      <div class="panel-title-group">
+        <span class="panel-title">Hebrew Subtitle Master</span>
+        <span class="panel-badge">עברית</span>
+      </div>
+      <button class="btn-icon" id="btnInfo" title="Capability check">ℹ</button>
+    </div>
+
+    <!-- ── API Key ── -->
+    <div class="section">
+      <label class="label" for="apiKey">OpenAI API Key</label>
+      <div class="input-row">
+        <input type="password" id="apiKey" class="input"
+               placeholder="sk-..." autocomplete="off" spellcheck="false" />
+        <button class="btn-icon" id="btnToggleKey" title="Show / Hide key">👁</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── Step 1 ── -->
+    <div class="section">
+      <button class="btn btn-primary btn-large" id="btnExtract">
+        <span class="btn-step">Step 1</span>
+        <span class="btn-label">Extract &amp; Transcribe Hebrew</span>
+      </button>
+    </div>
+
+    <!-- ── Step 2 ── -->
+    <div class="section">
+      <button class="btn btn-secondary btn-large" id="btnPush" disabled>
+        <span class="btn-step">Step 2</span>
+        <span class="btn-label">Push to Timeline</span>
+      </button>
+    </div>
+
+    <!-- ── Progress ── -->
+    <div class="section">
+      <div class="progress-container">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-pct" id="progressPct">0%</div>
+      </div>
+      <div class="status-text" id="statusText">Ready</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── SRT Preview ── -->
+    <div class="section">
+      <label class="label">Subtitle Preview (SRT)</label>
+      <textarea id="srtPreview" class="textarea rtl-text" readonly
+                placeholder="&#x202B;תמלול יופיע כאן לאחר עיבוד&#x202C;"></textarea>
+    </div>
+
+    <!-- ── Footer Actions ── -->
+    <div class="section footer-actions">
+      <button class="btn btn-ghost" id="btnSaveSRT" disabled>💾 Save as .SRT</button>
+      <button class="btn btn-ghost" id="btnClear">✕ Clear</button>
+    </div>
+
+  </div><!-- #app -->
+
+  <script src="js/CSInterface.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

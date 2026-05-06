@@ -1,0 +1,369 @@
+/* ============================================================
+   Hebrew Subtitle Master — Adobe CEP Dark Theme
+   Mirrors Premiere Pro's native Spectrum-based UI palette.
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Adobe dark palette */
+  --bg-0:          #1c1c1c;   /* deepest — body */
+  --bg-1:          #252525;   /* panel chrome */
+  --bg-2:          #323232;   /* input / textarea bg */
+  --bg-3:          #3d3d3d;   /* hover surfaces */
+
+  --border:        #464646;
+  --border-focus:  #3d8ef0;
+
+  --text-hi:       #e5e5e5;   /* primary labels */
+  --text-mid:      #9b9b9b;   /* secondary / metadata */
+  --text-lo:       #555555;   /* disabled, placeholder */
+
+  /* Spectrum action colours */
+  --blue:          #1473e6;
+  --blue-hover:    #0d66d0;
+  --blue-active:   #095aba;
+
+  --green:         #12805c;
+  --green-hover:   #107154;
+  --green-active:  #0d6148;
+
+  --danger:        #e34850;
+  --success:       #2d9d78;
+
+  --progress-track: #2e2e2e;
+  --progress-fill:  #1473e6;
+
+  --radius:   3px;
+  --radius-lg: 5px;
+  --font: "Adobe Clean", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          system-ui, sans-serif;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-0);
+  color: var(--text-hi);
+  font-family: var(--font);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+/* ── Header ── */
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px 8px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.panel-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-hi);
+  letter-spacing: 0.01em;
+}
+
+.panel-badge {
+  font-size: 10px;
+  background: var(--bg-3);
+  color: var(--text-mid);
+  padding: 1px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  /* Use a system Hebrew-capable font for the badge glyph */
+  font-family: "Arial Hebrew", "David", "Noto Sans Hebrew", sans-serif;
+}
+
+/* ── Sections ── */
+.section {
+  padding: 10px 12px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Labels ── */
+.label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 5px;
+}
+
+/* ── Input row ── */
+.input-row {
+  display: flex;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.input {
+  flex: 1;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-hi);
+  font-family: "SF Mono", "Consolas", "Courier New", monospace;
+  font-size: 11px;
+  padding: 5px 8px;
+  outline: none;
+  min-width: 0;
+  transition: border-color 0.12s;
+}
+
+.input:focus {
+  border-color: var(--border-focus);
+}
+
+.input::placeholder {
+  color: var(--text-lo);
+  font-style: italic;
+}
+
+/* ── Buttons — base ── */
+.btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background-color 0.12s, opacity 0.12s, box-shadow 0.12s;
+  user-select: none;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
+.btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Large step buttons */
+.btn-large {
+  width: 100%;
+  padding: 13px 16px;
+  min-height: 62px;
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-step {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.72;
+}
+
+.btn-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* Ripple shimmer on large buttons while loading */
+.btn-large.loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.08) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.btn-primary {
+  background: var(--blue);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--blue-hover);
+}
+
+.btn-primary:active:not(:disabled) {
+  background: var(--blue-active);
+}
+
+.btn-secondary {
+  background: var(--green);
+  color: #fff;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--green-hover);
+}
+
+.btn-secondary:active:not(:disabled) {
+  background: var(--green-active);
+}
+
+/* Ghost / utility buttons */
+.btn-ghost {
+  flex-direction: row;
+  background: var(--bg-2);
+  color: var(--text-hi);
+  border: 1px solid var(--border);
+  padding: 6px 11px;
+  font-size: 11px;
+  gap: 5px;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--bg-3);
+  border-color: var(--text-mid);
+}
+
+/* Icon-only button */
+.btn-icon {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-mid);
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.4;
+  transition: background 0.12s;
+  flex-shrink: 0;
+}
+
+.btn-icon:hover {
+  background: var(--bg-3);
+  color: var(--text-hi);
+}
+
+/* ── Progress bar ── */
+.progress-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.progress-bar-track {
+  flex: 1;
+  height: 5px;
+  background: var(--progress-track);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--progress-fill);
+  border-radius: 3px;
+  transition: width 0.35s ease;
+}
+
+.progress-pct {
+  font-size: 10px;
+  color: var(--text-mid);
+  min-width: 30px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+/* ── Status text ── */
+.status-text {
+  font-size: 11px;
+  color: var(--text-mid);
+  min-height: 15px;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s;
+}
+
+.status-text.error   { color: var(--danger);  font-style: normal; font-weight: 500; }
+.status-text.success { color: var(--success); font-style: normal; font-weight: 500; }
+.status-text.warn    { color: #e0ad12;        font-style: normal; }
+
+/* ── SRT Preview textarea ── */
+.textarea {
+  width: 100%;
+  height: 120px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-hi);
+  font-family: "SF Mono", "Consolas", "Courier New", monospace;
+  font-size: 11px;
+  padding: 6px 8px;
+  resize: vertical;
+  outline: none;
+  line-height: 1.55;
+  transition: border-color 0.12s;
+}
+
+.textarea:focus {
+  border-color: var(--border-focus);
+}
+
+/* RTL override — Hebrew subtitle lines read right-to-left */
+.rtl-text {
+  direction: rtl;
+  unicode-bidi: embed;
+  text-align: right;
+}
+
+/* ── Footer actions row ── */
+.footer-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.footer-actions .btn {
+  flex: 1;
+  justify-content: center;
+}
