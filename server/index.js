@@ -12,6 +12,17 @@ const PORT = process.env.PORT || 3000;
 const PHOTOS_DIR = process.env.PHOTOS_DIR || path.join(__dirname, "..", "photos");
 const UPLOAD_SECRET = process.env.UPLOAD_SECRET || "";
 
+// Serve index.html with og:image base URL injected dynamically
+const INDEX_PATH = path.join(__dirname, "..", "public", "index.html");
+app.get("/", (req, res) => {
+  const proto = req.headers["x-forwarded-proto"] || req.protocol;
+  const host  = req.headers["x-forwarded-host"]  || req.get("host");
+  const base  = `${proto}://${host}`;
+  const html  = fs.readFileSync(INDEX_PATH, "utf8").replace(/BASE_URL/g, base);
+  res.setHeader("Content-Type", "text/html");
+  res.send(html);
+});
+
 // Serve static files
 app.use(express.static(path.join(__dirname, "..", "public")));
 app.use(express.json({ limit: "10mb" }));
