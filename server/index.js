@@ -140,18 +140,19 @@ app.post("/api/upload", photoUpload.array("photos", 50), (req, res) => {
 // Start server
 async function start() {
   fs.mkdirSync(PHOTOS_DIR, { recursive: true });
-  console.log("Loading face detection models...");
-  await loadModels();
 
-  faceIndex = loadIndex();
-  console.log(`Face index loaded: ${faceIndex.length} photos indexed.`);
-
-  if (faceIndex.length === 0) {
-    console.log("\nNo photos indexed yet! Run 'npm run sync' first.");
+  try {
+    console.log("Loading face detection models...");
+    await loadModels();
+    faceIndex = loadIndex();
+    console.log(`Face index loaded: ${faceIndex.length} photos indexed.`);
+  } catch (err) {
+    console.warn("Face detection unavailable (models not loaded):", err.message);
+    console.warn("Static files will still be served normally.");
   }
 
   app.listen(PORT, () => {
-    console.log(`\nWedding Photo Finder running at http://localhost:${PORT}`);
+    console.log(`\nServer running at http://localhost:${PORT}`);
   });
 }
 
