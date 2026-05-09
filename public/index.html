@@ -10,13 +10,21 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Frank+Ruhl+Libre:wght@300;400;700&display=swap" rel="stylesheet">
   <style>
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+      user-select:none;-webkit-user-select:none;
+      touch-action:manipulation; /* remove 300ms iOS tap delay */
+    }
     :root{
       --cream:#FFF8EC;--amber:#F4A261;--gold:#E9C46A;--rust:#E76F51;
       --wood:#C4956A;--dark-wood:#7A4A28;--deep:#3D2000;
       --space:#080820;--cosmic:#13083A;--star:#FFD700;
     }
-    html,body{height:100%;overflow:hidden;font-family:'Heebo',sans-serif;direction:rtl;background:#1A0800}
+    html,body{
+      height:100%;overflow:hidden;
+      font-family:'Heebo',sans-serif;direction:rtl;background:#1A0800;
+      overscroll-behavior:none; /* no iOS rubber-band */
+      -webkit-overflow-scrolling:touch;
+    }
 
     /* ─── ROOM ─── */
     #room{
@@ -67,48 +75,53 @@
       pointer-events:none;
     }
 
-    /* Film grain */
+    /* Film grain — static SVG, no animation for iOS perf */
     .grain{
-      position:fixed;top:-50%;left:-50%;width:200%;height:200%;z-index:300;
-      pointer-events:none;opacity:.045;
-      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.09'/%3E%3C/svg%3E");
-      animation:grainShift .45s steps(1) infinite;
+      position:fixed;inset:0;z-index:300;
+      pointer-events:none;opacity:.032;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:160px 160px;
     }
-    @keyframes grainShift{
-      0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}
-      50%{transform:translate(2%,-3%)}75%{transform:translate(3%,3%)}
+    /* Vignette for depth */
+    .vignette{
+      position:fixed;inset:0;z-index:6;pointer-events:none;
+      background:radial-gradient(ellipse at 50% 42%,transparent 45%,rgba(20,8,0,.42) 100%);
     }
 
     /* ─── TITLE ─── */
     .title-wrap{
-      position:absolute;top:14px;left:50%;transform:translateX(-50%);
+      position:absolute;
+      top:max(14px, env(safe-area-inset-top, 14px));
+      left:50%;transform:translateX(-50%);
       text-align:center;z-index:30;white-space:nowrap;
       pointer-events:none;
     }
     .title-wrap h1{
-      font-family:'Frank Ruhl Libre',serif;font-size:21px;font-weight:300;
-      color:rgba(70,30,5,.82);letter-spacing:4px;
-      text-shadow:0 1px 4px rgba(255,210,120,.6);
+      font-family:'Frank Ruhl Libre',serif;font-size:22px;font-weight:300;
+      color:rgba(68,28,4,.86);letter-spacing:5px;
+      text-shadow:0 1px 6px rgba(255,220,130,.55);
       transition:color 2s;
     }
-    .title-wrap h1.cosmic{color:rgba(200,170,255,.9)}
+    .title-wrap h1.cosmic{color:rgba(210,180,255,.92)}
     .title-sub{
-      font-size:10px;color:rgba(100,50,10,.55);letter-spacing:6px;margin-top:2px;
+      font-size:9.5px;color:rgba(100,50,10,.5);letter-spacing:6px;margin-top:3px;
       transition:color 2s;
     }
-    .title-sub.cosmic{color:rgba(160,130,220,.6)}
+    .title-sub.cosmic{color:rgba(160,130,220,.65)}
 
     /* ─── PARTICLES ─── */
-    .particles{position:absolute;inset:0;pointer-events:none;z-index:8}
+    .particles{position:absolute;inset:0;pointer-events:none;z-index:8;contain:strict}
     .p{
       position:absolute;border-radius:50%;
-      background:rgba(255,210,120,.65);
+      background:rgba(255,210,120,.55);
+      will-change:transform,opacity;
+      -webkit-backface-visibility:hidden;backface-visibility:hidden;
       animation:floatUp var(--d,9s) ease-in-out infinite var(--dl,0s);
     }
     @keyframes floatUp{
       0%{transform:translateY(0) scale(1);opacity:0}
-      10%{opacity:.8}90%{opacity:.2}
-      100%{transform:translateY(-100vh) scale(.4);opacity:0}
+      10%{opacity:.7}90%{opacity:.15}
+      100%{transform:translateY(-100vh) scale(.3);opacity:0}
     }
     .cosmic-star-p{
       position:absolute;border-radius:50%;background:white;
@@ -151,6 +164,8 @@
       box-shadow:0 24px 64px rgba(100,50,10,.4),0 0 40px rgba(255,190,80,.18);
       animation:breathe 4.5s ease-in-out infinite;
       transition:filter 2s, box-shadow 2s;
+      will-change:transform;
+      -webkit-backface-visibility:hidden;backface-visibility:hidden;
     }
     .stav-photo.cosmic{
       filter:sepia(0%) saturate(120%) contrast(110%) brightness(85%) hue-rotate(220deg);
@@ -162,17 +177,29 @@
     .obj{
       position:absolute;cursor:pointer;z-index:20;
       transition:transform .18s cubic-bezier(.34,1.56,.64,1);
+      -webkit-backface-visibility:hidden;backface-visibility:hidden;
+      /* Minimum tap target 44px for iOS HIG */
+      min-width:44px;min-height:44px;
+      display:flex;align-items:center;justify-content:center;
+      flex-direction:column;
     }
-    .obj:active{transform:scale(.88) !important}
-    .obj svg{filter:drop-shadow(0 4px 8px rgba(0,0,0,.22))}
+    .obj:active{transform:scale(.86) !important}
+    .obj svg{filter:drop-shadow(0 3px 7px rgba(0,0,0,.2))}
+    /* Press ripple hint */
+    .obj::after{
+      content:'';position:absolute;inset:0;border-radius:50%;
+      background:rgba(255,255,255,0);transition:background .15s;
+      pointer-events:none;
+    }
+    .obj:active::after{background:rgba(255,255,255,.12)}
 
-    /* Float animations */
-    @keyframes float1{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-7px) rotate(var(--r,0deg))}}
-    @keyframes float2{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-5px) rotate(var(--r,0deg))}}
-    @keyframes float3{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-9px) rotate(var(--r,0deg))}}
-    .f1{animation:float1 3.8s ease-in-out infinite}
-    .f2{animation:float2 4.5s ease-in-out infinite .8s}
-    .f3{animation:float3 3.2s ease-in-out infinite 1.5s}
+    /* Float animations — only transform+opacity for GPU */
+    @keyframes float1{0%,100%{transform:translateY(0px)}50%{transform:translateY(-8px)}}
+    @keyframes float2{0%,100%{transform:translateY(0px)}50%{transform:translateY(-6px)}}
+    @keyframes float3{0%,100%{transform:translateY(0px)}50%{transform:translateY(-10px)}}
+    .f1{animation:float1 4s ease-in-out infinite;will-change:transform}
+    .f2{animation:float2 5s ease-in-out infinite .6s;will-change:transform}
+    .f3{animation:float3 3.5s ease-in-out infinite 1.4s;will-change:transform}
 
     /* Stars (tappable) */
     .tap-star{
@@ -188,11 +215,13 @@
     /* ─── POLAROIDS ─── */
     .polaroid{
       position:absolute;cursor:pointer;z-index:22;
+      will-change:transform;
+      -webkit-backface-visibility:hidden;backface-visibility:hidden;
       animation:polFloat var(--d,5s) ease-in-out infinite var(--dl,0s);
     }
     @keyframes polFloat{
       0%,100%{transform:rotate(var(--r,-5deg)) translateY(0)}
-      50%{transform:rotate(calc(var(--r,-5deg) + 3deg)) translateY(-8px)}
+      50%{transform:rotate(calc(var(--r,-5deg) + 2deg)) translateY(-7px)}
     }
     .pol-inner{
       background:#FFFEF4;padding:7px 7px 20px;
@@ -203,38 +232,52 @@
 
     /* ─── ROKO ─── */
     #roko-wrap{
-      position:absolute;bottom:6%;left:0;
-      width:75px;z-index:24;cursor:pointer;
+      position:absolute;bottom:5.5%;left:0;
+      width:80px;z-index:24;cursor:pointer;
+      will-change:transform;
+      -webkit-backface-visibility:hidden;backface-visibility:hidden;
+      /* Large tap target */
+      padding:8px;
     }
-    #roko-wrap svg{overflow:visible}
+    #roko-wrap svg{overflow:visible;display:block}
 
     /* ─── MODAL ─── */
     .modal{
       position:fixed;inset:0;z-index:200;
-      background:rgba(20,10,0,.62);
-      backdrop-filter:blur(10px);
+      background:rgba(15,7,0,.65);
+      backdrop-filter:blur(14px);
+      -webkit-backdrop-filter:blur(14px); /* iOS */
       display:flex;align-items:flex-end;justify-content:center;
       opacity:0;pointer-events:none;
-      transition:opacity .3s ease;
+      transition:opacity .28s ease;
     }
     .modal.open{opacity:1;pointer-events:all}
     .mcard{
       width:100%;max-width:460px;position:relative;
-      background:linear-gradient(145deg,rgba(255,250,235,.97),rgba(255,235,195,.97));
-      border-radius:28px 28px 0 0;
-      padding:28px 22px 48px;text-align:center;
+      background:linear-gradient(160deg,rgba(255,252,238,.98),rgba(255,238,205,.98));
+      border-radius:32px 32px 0 0;
+      padding:30px 24px calc(44px + env(safe-area-inset-bottom, 0px));
+      text-align:center;
       transform:translateY(100%);
-      transition:transform .42s cubic-bezier(.34,1.56,.64,1);
-      box-shadow:0 -12px 60px rgba(120,60,10,.22);
+      transition:transform .4s cubic-bezier(.32,1.52,.6,1);
+      box-shadow:0 -8px 48px rgba(110,55,10,.2),0 -1px 0 rgba(255,200,120,.3);
+      will-change:transform;
     }
     .modal.open .mcard{transform:translateY(0)}
-    .mclose{
-      position:absolute;top:14px;left:16px;
-      width:30px;height:30px;border-radius:50%;
-      background:rgba(255,255,255,.55);
-      display:flex;align-items:center;justify-content:center;
-      font-size:18px;color:rgba(100,50,10,.6);cursor:pointer;
+    /* Drag handle */
+    .mcard::before{
+      content:'';display:block;width:36px;height:4px;border-radius:2px;
+      background:rgba(180,120,60,.25);margin:0 auto 20px;
     }
+    .mclose{
+      position:absolute;top:16px;left:16px;
+      width:44px;height:44px;border-radius:50%; /* min 44px for iOS */
+      background:rgba(255,255,255,.5);
+      display:flex;align-items:center;justify-content:center;
+      font-size:17px;color:rgba(100,50,10,.55);cursor:pointer;
+      transition:background .15s;
+    }
+    .mclose:active{background:rgba(255,255,255,.75)}
     .micon{font-size:46px;display:block;margin-bottom:14px;animation:iconPop .55s cubic-bezier(.34,1.56,.64,1) .15s both}
     @keyframes iconPop{0%{transform:scale(0) rotate(-15deg)}100%{transform:scale(1) rotate(0)}}
     .mtitle{
@@ -331,16 +374,21 @@
 
     /* ─── MUSIC PLAYER ─── */
     #music-btn{
-      position:fixed;bottom:20px;left:16px;z-index:150;
-      width:52px;height:52px;border-radius:50%;
-      background:rgba(255,235,190,.85);
-      backdrop-filter:blur(10px);
-      box-shadow:0 4px 20px rgba(100,50,10,.3);
+      position:fixed;
+      bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+      left:calc(16px + env(safe-area-inset-left, 0px));
+      z-index:150;
+      width:54px;height:54px;border-radius:50%;
+      background:rgba(255,238,195,.88);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      box-shadow:0 4px 22px rgba(100,50,10,.28),0 1px 0 rgba(255,255,255,.5) inset;
       cursor:pointer;display:flex;align-items:center;justify-content:center;
-      transition:transform .2s,background .3s;
+      transition:transform .18s,background .3s;
+      will-change:transform;
     }
-    #music-btn:active{transform:scale(.88)}
-    #music-btn.playing{background:rgba(244,162,97,.9)}
+    #music-btn:active{transform:scale(.86)}
+    #music-btn.playing{background:rgba(244,162,97,.92)}
     .cassette-icon{width:32px;height:32px}
     .spool{
       transform-origin:50% 50%;
@@ -392,7 +440,9 @@
 
     /* star counter dots */
     #star-counter{
-      position:fixed;top:52px;left:50%;transform:translateX(-50%);
+      position:fixed;
+      top:calc(54px + env(safe-area-inset-top, 0px));
+      left:50%;transform:translateX(-50%);
       display:flex;gap:6px;z-index:60;pointer-events:none;
       opacity:0;transition:opacity .3s;
     }
@@ -445,8 +495,9 @@
 </head>
 <body>
 
-<!-- Grain -->
+<!-- Grain + depth -->
 <div class="grain"></div>
+<div class="vignette"></div>
 
 <!-- Lamp glow overlay -->
 <div id="lamp-glow"></div>
@@ -509,7 +560,6 @@
       <ellipse cx="15" cy="24" rx="6" ry="4" fill="rgba(255,255,255,.9)"/>
       <ellipse cx="26" cy="24" rx="6" ry="4" fill="rgba(255,255,255,.9)"/>
     </svg>
-    <div style="text-align:center;font-size:10px;color:rgba(70,40,10,.55);margin-top:3px">חלון</div>
   </div>
 
   <!-- ─── LAMP ─── -->
@@ -528,7 +578,6 @@
       <ellipse cx="30" cy="82" rx="16" ry="5" fill="#6B5335"/>
       <ellipse cx="30" cy="80" rx="12" ry="3.5" fill="#8B6B45"/>
     </svg>
-    <div style="text-align:center;font-size:10px;color:rgba(70,40,10,.55);margin-top:3px">מנורה</div>
   </div>
 
   <!-- ─── MIRROR ─── -->
@@ -553,7 +602,6 @@
       <rect x="20" y="68" width="12" height="8" rx="3" fill="#A08020"/>
       <rect x="14" y="73" width="24" height="4" rx="2" fill="#8A6A10"/>
     </svg>
-    <div style="text-align:center;font-size:10px;color:rgba(70,40,10,.55);margin-top:3px">מראה</div>
   </div>
 
   <!-- ─── TREE + MAP ─── -->
@@ -582,7 +630,6 @@
       <circle cx="25" cy="64" r="1.5" fill="#A06848"/>
       <circle cx="38" cy="64" r="1.5" fill="#A06848"/>
     </svg>
-    <div style="text-align:center;font-size:10px;color:rgba(70,40,10,.55);margin-top:3px">עץ ומפה</div>
   </div>
 
   <!-- ─── STAV PHOTO ─── -->
@@ -657,7 +704,6 @@
       <!-- Smile -->
       <path d="M25 29 Q31 35 37 29" stroke="#D06060" stroke-width="2" fill="none" stroke-linecap="round"/>
     </svg>
-    <div style="text-align:center;font-size:10px;color:rgba(70,40,10,.55);margin-top:2px">בובה</div>
   </div>
 
   <!-- ─── MUSIC CORNER ─── -->
@@ -683,7 +729,6 @@
       <circle cx="6" cy="32" r="2.5" fill="#4A4A6A"/>
       <circle cx="64" cy="32" r="2.5" fill="#4A4A6A"/>
     </svg>
-    <div style="text-align:center;font-size:10px;color:rgba(70,40,10,.55);margin-top:2px">מוזיקה</div>
   </div>
 
   <!-- ─── FLOATING POLAROIDS ─── -->
@@ -986,35 +1031,28 @@
 <!-- GSAP -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>
+// ─── REDUCED MOTION DETECTION ─────────────────────────────────
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 // ─── PARTICLES ────────────────────────────────────────────────
 (function spawnParticles() {
   const cont = document.getElementById('particles');
-  for (let i = 0; i < 22; i++) {
+  // Fewer particles on reduced-motion or low-memory devices
+  const count = reducedMotion ? 6 : 16;
+  for (let i = 0; i < count; i++) {
     const p = document.createElement('div');
     p.className = 'p';
-    const size = Math.random() * 3 + 1.5;
-    p.style.cssText = `
-      width:${size}px;height:${size}px;
-      left:${Math.random()*100}%;
-      bottom:${Math.random()*60}%;
-      --d:${7 + Math.random()*9}s;
-      --dl:-${Math.random()*10}s;
-    `;
+    const size = Math.random() * 2.5 + 1.5;
+    p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;bottom:${Math.random()*60}%;--d:${8+Math.random()*8}s;--dl:-${Math.random()*10}s`;
     cont.appendChild(p);
   }
-
-  // Cosmic stars (hidden by default)
-  for (let i = 0; i < 60; i++) {
+  // Cosmic stars
+  const starCount = reducedMotion ? 20 : 55;
+  for (let i = 0; i < starCount; i++) {
     const s = document.createElement('div');
     s.className = 'cosmic-star-p';
-    const sz = Math.random() * 2.5 + 0.8;
-    s.style.cssText = `
-      width:${sz}px;height:${sz}px;
-      left:${Math.random()*100}%;
-      top:${Math.random()*100}%;
-      --d:${1.5+Math.random()*3}s;
-      --dl:-${Math.random()*3}s;
-    `;
+    const sz = Math.random() * 2 + 0.8;
+    s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${1.8+Math.random()*3}s;--dl:-${Math.random()*3}s`;
     cont.appendChild(s);
   }
 })();
@@ -1031,17 +1069,18 @@ gsap.to(rokoTail, {
   duration: .35, repeat: -1, yoyo: true, ease: 'power1.inOut'
 });
 
-// Walking
+// Walking — slow & natural
 let rokoFacingRight = true;
 const rokoTL = gsap.timeline({ repeat: -1 });
 rokoTL
-  .to(rokoWrap, { x: '65vw', duration: 9, ease: 'none' })
-  .call(() => { rokoSvg.style.transform = 'scaleX(-1)'; rokoFacingRight = false; })
-  .to(rokoWrap, { x: 0, duration: 9, ease: 'none' })
-  .call(() => { rokoSvg.style.transform = 'scaleX(1)'; rokoFacingRight = true; })
-  .to(rokoWrap, { y: -8, duration: .5, ease: 'power2.out' })
-  .to(rokoWrap, { y: 0, duration: 2, ease: 'power2.inOut' }) // sit & rest
-  .to(rokoWrap, { y: 0, duration: .5 });
+  .to(rokoWrap, { x: '64vw', duration: 11, ease: 'none' })
+  .call(() => { rokoSvg.style.transform = 'scaleX(-1)'; })
+  .to(rokoWrap, { y: -4, duration: .4, ease: 'power2.out' }) // small hop when turning
+  .to(rokoWrap, { y: 0, duration: .4, ease: 'bounce.out' })
+  .to(rokoWrap, { x: 0, duration: 11, ease: 'none' })
+  .call(() => { rokoSvg.style.transform = 'scaleX(1)'; })
+  .to(rokoWrap, { y: -3, duration: .3, ease: 'power2.out' })
+  .to(rokoWrap, { y: 0, duration: 2.5, ease: 'bounce.out' }); // sit & wag
 
 // Roko kiss
 let kissActive = false;
@@ -1454,35 +1493,63 @@ document.addEventListener('touchstart', () => {
 }, { passive: true });
 
 // ─── GSAP IDLE ANIMATIONS ──────────────────────────────────────
-// Lamp halo pulse
-gsap.to('#lamp-halo', {
-  attr: { rx: 26, ry: 18 },
-  opacity: .5, duration: 2,
-  repeat: -1, yoyo: true, ease: 'power1.inOut'
+if (!reducedMotion) {
+  // Lamp halo pulse
+  gsap.to('#lamp-halo', {
+    attr:{ rx:27, ry:19 }, opacity:.4,
+    duration:2.2, repeat:-1, yoyo:true, ease:'sine.inOut'
+  });
+  // Stav photo gentle drift
+  gsap.to('#stav-wrap', {
+    x:5, duration:7, repeat:-1, yoyo:true, ease:'sine.inOut'
+  });
+  // Mirror shimmer
+  gsap.to('.mirror-shimmer', {
+    opacity:.15, duration:3.5, repeat:-1, yoyo:true, ease:'sine.inOut'
+  });
+}
+
+// ─── CINEMATIC ENTRANCE ────────────────────────────────────────
+const entranceDur = reducedMotion ? 0 : 1;
+// Scene fades in first
+gsap.from('#room-bg, .room-light, .floor', {
+  opacity:0, duration: reducedMotion ? 0 : 1.8, ease:'power2.out'
+});
+// Title drops in
+gsap.from('.title-wrap', {
+  opacity:0, y:-16, duration: reducedMotion ? 0 : 1.4,
+  delay:.3, ease:'power3.out'
+});
+// Stav appears from slight scale
+gsap.from('.stav-wrap', {
+  opacity:0, scale:.93, duration: reducedMotion ? 0 : 1.8,
+  delay:.6, ease:'power2.out'
+});
+// Objects float in with stagger
+gsap.from('.obj', {
+  opacity:0, y:20, duration: reducedMotion ? 0 : 1,
+  stagger:.1, delay:.9, ease:'back.out(1.4)'
+});
+// Polaroids spin in
+gsap.from('.polaroid', {
+  opacity:0, scale:.6, rotation:-12,
+  duration: reducedMotion ? 0 : .9,
+  stagger:.18, delay:1.1, ease:'back.out(1.7)'
+});
+// Roko enters from left
+gsap.from('#roko-wrap', {
+  opacity:0, x:-40, duration: reducedMotion ? 0 : 1,
+  delay:1.8, ease:'back.out(1.4)'
+});
+// Stars pulse in
+gsap.from('.tap-star', {
+  opacity:0, scale:0, duration: reducedMotion ? 0 : .6,
+  stagger:.15, delay:2, ease:'back.out(2)'
 });
 
-// Stav photo subtle left-right drift
-gsap.to('#stav-wrap', {
-  x: 4, duration: 6,
-  repeat: -1, yoyo: true, ease: 'sine.inOut'
-});
-
-// Mirror shimmer
-gsap.to('.mirror-shimmer', {
-  opacity: .2, duration: 3,
-  repeat: -1, yoyo: true, ease: 'power1.inOut'
-});
-
-// Title subtle fade in on load
-gsap.from('.title-wrap', { opacity: 0, y: -10, duration: 1.5, ease: 'power2.out' });
-gsap.from('.stav-wrap', { opacity: 0, scale: .95, duration: 2, delay: .5, ease: 'power2.out' });
-gsap.from('.obj', { opacity: 0, y: 15, duration: 1, stagger: .12, delay: .8, ease: 'back.out(1.4)' });
-gsap.from('#roko-wrap', { opacity: 0, x: -30, duration: 1.2, delay: 1.6, ease: 'back.out(1.7)' });
-gsap.from('.polaroid', { opacity: 0, scale: .7, duration: .8, stagger: .2, delay: 1.2, ease: 'back.out(1.7)' });
-
-// Spool rotation animation (CSS)
+// Spool CSS animation
 const spoolStyle = document.createElement('style');
-spoolStyle.textContent = `.spinning{animation:spoolSpin .5s linear infinite!important}@keyframes spoolSpin{to{transform:rotate(360deg)}}`;
+spoolStyle.textContent = `.spinning{animation:spoolSpin .5s linear infinite!important}`;
 document.head.appendChild(spoolStyle);
 
 </script>
