@@ -923,18 +923,33 @@
       <button class="mctrl-btn" id="play-pause-btn" onclick="togglePlayPause()">▶</button>
     </div>
     <div class="music-status" id="music-status">טוען...</div>
-    <div style="text-align:center">
+    <div style="text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center">
       <label class="music-load-btn">
-        <span>📁</span> <span>טען שיר חדש</span>
-        <input type="file" id="music-file-input" accept="audio/*" style="display:none">
+        <span>📁</span> <span>טען שיר מהמכשיר</span>
+        <input type="file" id="music-file-input" accept="audio/*,video/*" style="display:none">
       </label>
+      <div style="width:100%;display:flex;gap:8px;align-items:center;margin-top:4px">
+        <input type="text" id="music-url-input"
+          placeholder="הדבק קישור לשיר (Dropbox / Drive)..."
+          style="flex:1;padding:8px 12px;border-radius:20px;border:1.5px solid rgba(244,162,97,.5);
+                 background:rgba(255,255,255,.6);font-family:Heebo,sans-serif;font-size:13px;
+                 direction:rtl;color:#5C3A1E;outline:none">
+        <button onclick="loadFromUrl()"
+          style="padding:8px 14px;border-radius:20px;border:none;
+                 background:linear-gradient(135deg,#F4A261,#E9C46A);
+                 color:white;font-size:13px;cursor:pointer;white-space:nowrap;
+                 font-family:Heebo,sans-serif">
+          טען
+        </button>
+      </div>
     </div>
     <div class="vol-wrap">
       <label>🔊</label>
       <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="0.6">
     </div>
     <div class="music-file-hint">
-      להוספת מוזיקה קבועה — שמור קובץ MP3 בתיקיית <code>/public/music/ambient.mp3</code>
+      להוספת מוזיקה קבועה — שמור קובץ MP3 כ: <code>/public/music/ambient.mp3</code><br>
+      ● קובץ וידאו עם מוזיקה? עובד גם כן!
     </div>
   </div>
 </div>
@@ -1203,125 +1218,240 @@ function setWeather(type, force) {
 // Initialize rain drops
 setWeather('rain', true);
 
-// ─── MUSIC PLAYER ────────────────────────────────────────────
+// ─── MUSIC SYSTEM ─────────────────────────────────────────────
 const bgAudio = document.getElementById('bg-audio');
 const playBtn = document.getElementById('play-pause-btn');
 const musicStatus = document.getElementById('music-status');
 const volSlider = document.getElementById('vol-slider');
 const musicBtn = document.getElementById('music-btn');
-const spoolL = document.getElementById('spool-l');
-const spoolR = document.getElementById('spool-r');
-const miniSpoolL = document.getElementById('mini-spool-l');
-const miniSpoolR = document.getElementById('mini-spool-r');
+const spoolEls = ['spool-l','spool-r','mini-spool-l','mini-spool-r'].map(id => document.getElementById(id));
 const musicDot = document.getElementById('music-dot');
 
 let isPlaying = false;
-let musicReady = false;
+let usingFileAudio = false; // true = bgAudio playing; false = Web Audio ambient
 
-bgAudio.volume = 0.6;
+// ─── WEB AUDIO AMBIENT ENGINE ──────────────────────────────────
+let actx = null;
+let masterGain = null;
+let ambientOscs = [];
+let cosmicActive = false;
+
+// Warm A-minor pad: A2 C3 E3 A3 C4 E4 (emotional, intimate)
+const WARM_FREQS  = [110, 130.81, 164.81, 220, 261.63, 329.63];
+// Cosmic: D-minor extended (dark, spacious)
+const COSMIC_FREQS = [73.42, 110, 146.83, 174.61, 220, 293.66];
+
+function buildReverb(ctx) {
+  const len = ctx.sampleRate * 2.8;
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++)
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 1.8);
+  }
+  const conv = ctx.createConvolver();
+  conv.buffer = buf;
+  return conv;
+}
+
+function startAmbient() {
+  if (actx) return;
+  try { actx = new (window.AudioContext || window.webkitAudioContext)(); }
+  catch(e) { return; }
+
+  masterGain = actx.createGain();
+  masterGain.gain.setValueAtTime(0, actx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(0.13, actx.currentTime + 3);
+  masterGain.connect(actx.destination);
+
+  const reverb = buildReverb(actx);
+  const reverbGain = actx.createGain();
+  reverbGain.gain.value = 0.45;
+  reverb.connect(reverbGain);
+  reverbGain.connect(masterGain);
+
+  const dryGain = actx.createGain();
+  dryGain.gain.value = 0.55;
+  dryGain.connect(masterGain);
+
+  WARM_FREQS.forEach((freq, i) => {
+    const osc = actx.createOscillator();
+    const env = actx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    env.gain.setValueAtTime(0, actx.currentTime);
+    env.gain.linearRampToValueAtTime(0.055 / (i * 0.4 + 1), actx.currentTime + 2 + i * 0.6);
+
+    // Gentle tremolo
+    const lfo = actx.createOscillator();
+    const lfoGain = actx.createGain();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.04 + i * 0.018;
+    lfoGain.gain.value = 0.012;
+    lfo.connect(lfoGain);
+    lfoGain.connect(env.gain);
+    lfo.start(actx.currentTime + i * 0.3);
+
+    osc.connect(env);
+    env.connect(dryGain);
+    env.connect(reverb);
+    osc.start(actx.currentTime + i * 0.4);
+
+    ambientOscs.push({ osc, env, lfo });
+  });
+
+  isPlaying = true;
+  updateMusicUI('playing');
+}
+
+function stopAmbient() {
+  if (!actx || !masterGain) return;
+  masterGain.gain.linearRampToValueAtTime(0, actx.currentTime + 1.5);
+  setTimeout(() => {
+    ambientOscs.forEach(n => { try { n.osc.stop(); n.lfo.stop(); } catch(e){} });
+    ambientOscs = [];
+    actx.close();
+    actx = null;
+    masterGain = null;
+  }, 1600);
+  isPlaying = false;
+  updateMusicUI('paused');
+}
+
+function setCosmicTone(on) {
+  if (!actx) return;
+  const target = on ? COSMIC_FREQS : WARM_FREQS;
+  ambientOscs.forEach((n, i) => {
+    if (target[i]) {
+      n.osc.frequency.linearRampToValueAtTime(target[i], actx.currentTime + 3);
+    }
+  });
+  // Darken volume slightly in cosmic
+  if (masterGain) {
+    masterGain.gain.linearRampToValueAtTime(on ? 0.09 : 0.13, actx.currentTime + 2);
+  }
+}
+
+// ─── FILE / URL AUDIO ──────────────────────────────────────────
+bgAudio.volume = 0.65;
+
+// Try static file first
+bgAudio.src = '/music/ambient.mp3';
+bgAudio.addEventListener('canplaythrough', () => {
+  // File exists — offer it but don't auto-play
+  musicStatus.textContent = '🎵 שיר נמצא — לחץ ▶ להפעלה';
+  playBtn.textContent = '▶';
+}, { once: true });
+bgAudio.addEventListener('error', () => {
+  // No file: will use Web Audio ambient
+  musicStatus.textContent = 'לחץ ▶ לאמביינט • או טען שיר 🎶';
+}, { once: true });
 
 function updateMusicUI(state) {
   if (state === 'playing') {
     playBtn.textContent = '⏸';
-    musicStatus.textContent = '🎵 מנגן...';
+    musicStatus.textContent = usingFileAudio ? '🎵 מנגן...' : '🎵 אמביינט פועל';
     musicBtn.classList.add('playing');
-    [spoolL, spoolR, miniSpoolL, miniSpoolR].forEach(s => { if(s) s.classList.add('spinning'); });
+    spoolEls.forEach(s => s && s.classList.add('spinning'));
     musicDot.style.opacity = '1';
-    isPlaying = true;
-  } else if (state === 'paused') {
+  } else {
     playBtn.textContent = '▶';
-    musicStatus.textContent = '⏸ מושהה';
+    musicStatus.textContent = usingFileAudio
+      ? '⏸ מושהה' : 'לחץ ▶ לאמביינט • או טען שיר 🎶';
     musicBtn.classList.remove('playing');
-    [spoolL, spoolR, miniSpoolL, miniSpoolR].forEach(s => { if(s) s.classList.remove('spinning'); });
+    spoolEls.forEach(s => s && s.classList.remove('spinning'));
     musicDot.style.opacity = '0';
-    isPlaying = false;
-  } else if (state === 'empty') {
-    playBtn.textContent = '▶';
-    musicStatus.textContent = 'טען שיר כדי להתחיל 🎶';
-    musicBtn.classList.remove('playing');
-  } else if (state === 'loading') {
-    musicStatus.textContent = 'טוען מוזיקה...';
   }
 }
 
-// Try loading default music file
-bgAudio.src = '/music/ambient.mp3';
-bgAudio.addEventListener('canplaythrough', () => {
-  musicReady = true;
-  updateMusicUI('paused');
-  musicStatus.textContent = '🎵 מוכן להשמעה';
-}, { once: true });
-bgAudio.addEventListener('error', () => {
-  updateMusicUI('empty');
-});
-
 function togglePlayPause() {
-  if (!musicReady && !bgAudio.src.startsWith('blob:')) {
-    musicStatus.textContent = 'טען שיר קודם 👆';
-    return;
-  }
-  if (isPlaying) {
-    bgAudio.pause();
-    updateMusicUI('paused');
+  if (usingFileAudio) {
+    // File audio mode
+    if (isPlaying) {
+      bgAudio.pause();
+      isPlaying = false;
+      updateMusicUI('paused');
+    } else {
+      bgAudio.play()
+        .then(() => { isPlaying = true; updateMusicUI('playing'); })
+        .catch(() => { musicStatus.textContent = 'לחץ שוב להפעלה'; });
+    }
   } else {
-    bgAudio.play().then(() => {
-      updateMusicUI('playing');
-    }).catch(() => {
-      musicStatus.textContent = 'לחץ שוב להפעלה';
-    });
+    // Web Audio ambient mode
+    if (isPlaying) {
+      stopAmbient();
+    } else {
+      startAmbient();
+    }
   }
 }
 
 volSlider.addEventListener('input', () => {
-  bgAudio.volume = parseFloat(volSlider.value);
+  const v = parseFloat(volSlider.value);
+  bgAudio.volume = v;
+  if (masterGain && actx)
+    masterGain.gain.linearRampToValueAtTime(v * 0.22, actx.currentTime + 0.1);
 });
 
+// File upload
 document.getElementById('music-file-input').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
+
+  // Stop ambient if running
+  if (actx) stopAmbient();
+  usingFileAudio = true;
+
   const url = URL.createObjectURL(file);
   bgAudio.src = url;
-  musicReady = true;
-  updateMusicUI('loading');
   bgAudio.load();
+  musicStatus.textContent = 'טוען...';
+
   bgAudio.addEventListener('canplaythrough', () => {
-    bgAudio.play().then(() => updateMusicUI('playing'))
-      .catch(() => { updateMusicUI('paused'); musicStatus.textContent = '🎵 מוכן — לחץ ▶'; });
+    bgAudio.play()
+      .then(() => { isPlaying = true; updateMusicUI('playing'); })
+      .catch(() => { updateMusicUI('paused'); musicStatus.textContent = `🎵 "${file.name}" — לחץ ▶`; });
   }, { once: true });
   bgAudio.addEventListener('error', () => {
-    updateMusicUI('empty');
-    musicStatus.textContent = '⚠️ שגיאה בטעינת הקובץ';
+    musicStatus.textContent = '⚠️ שגיאה בטעינה';
   }, { once: true });
 });
 
-// Play on first tap anywhere (mobile autoplay workaround)
-let firstTap = true;
-document.addEventListener('touchstart', () => {
-  if (firstTap && musicReady && !isPlaying) {
-    firstTap = false;
-    // Don't auto-play, just unlock the audio context
-    bgAudio.play().then(() => {
-      bgAudio.pause();
-      bgAudio.currentTime = 0;
-    }).catch(() => {});
+// URL loader (Google Drive + direct links)
+function loadFromUrl() {
+  let url = document.getElementById('music-url-input').value.trim();
+  if (!url) return;
+
+  // Convert Google Drive sharing URL → direct streamable URL
+  const gdMatch = url.match(/drive\.google\.com\/file\/d\/([^\/\?]+)/);
+  if (gdMatch) {
+    url = `https://drive.google.com/uc?id=${gdMatch[1]}&export=download`;
   }
-}, { once: true });
+  // Dropbox: change dl=0 → dl=1
+  url = url.replace('dropbox.com', 'dl.dropboxusercontent.com').replace('?dl=0', '?dl=1');
 
-// ─── WEB AUDIO AMBIENT (fallback) ──────────────────────────────
-let audioCtx = null;
-let ambientNodes = [];
-let cosmicNodes = [];
+  if (actx) stopAmbient();
+  usingFileAudio = true;
+  bgAudio.src = url;
+  bgAudio.crossOrigin = 'anonymous';
+  bgAudio.load();
+  musicStatus.textContent = 'טוען מהקישור...';
 
-function initAmbient() {
-  if (audioCtx) return;
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  } catch(e) { return; }
+  bgAudio.addEventListener('canplaythrough', () => {
+    bgAudio.play()
+      .then(() => { isPlaying = true; updateMusicUI('playing'); })
+      .catch(() => { updateMusicUI('paused'); musicStatus.textContent = '🎵 מוכן — לחץ ▶'; });
+  }, { once: true });
+  bgAudio.addEventListener('error', () => {
+    musicStatus.textContent = '⚠️ CORS חוסם — הורד את הקובץ ואז לחץ 📁';
+    usingFileAudio = false;
+  }, { once: true });
 }
 
-function setCosmicTone(on) {
-  // Just a subtle pitch shift indicator, not intrusive
-}
+// Unlock AudioContext on first touch (iOS requirement)
+document.addEventListener('touchstart', () => {
+  if (actx && actx.state === 'suspended') actx.resume();
+}, { passive: true });
 
 // ─── GSAP IDLE ANIMATIONS ──────────────────────────────────────
 // Lamp halo pulse
