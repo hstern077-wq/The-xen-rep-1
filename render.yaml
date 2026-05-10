@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: stavs-universe
+    runtime: node
+    buildCommand: npm install --omit=dev
+    startCommand: node server/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=450"
+    healthCheckPath: /
+    autoDeploy: true
