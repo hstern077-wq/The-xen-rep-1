@@ -12,6 +12,17 @@ const PORT = process.env.PORT || 3000;
 const PHOTOS_DIR = process.env.PHOTOS_DIR || path.join(__dirname, "..", "photos");
 const UPLOAD_SECRET = process.env.UPLOAD_SECRET || "";
 
+// Serve index.html with og:image base URL injected dynamically
+const INDEX_PATH = path.join(__dirname, "..", "public", "index.html");
+app.get("/", (req, res) => {
+  const proto = req.headers["x-forwarded-proto"] || req.protocol;
+  const host  = req.headers["x-forwarded-host"]  || req.get("host");
+  const base  = `${proto}://${host}`;
+  const html  = fs.readFileSync(INDEX_PATH, "utf8").replace(/BASE_URL/g, base);
+  res.setHeader("Content-Type", "text/html");
+  res.send(html);
+});
+
 // Serve static files
 app.use(express.static(path.join(__dirname, "..", "public")));
 app.use(express.json({ limit: "10mb" }));
@@ -140,18 +151,19 @@ app.post("/api/upload", photoUpload.array("photos", 50), (req, res) => {
 // Start server
 async function start() {
   fs.mkdirSync(PHOTOS_DIR, { recursive: true });
-  console.log("Loading face detection models...");
-  await loadModels();
 
-  faceIndex = loadIndex();
-  console.log(`Face index loaded: ${faceIndex.length} photos indexed.`);
-
-  if (faceIndex.length === 0) {
-    console.log("\nNo photos indexed yet! Run 'npm run sync' first.");
+  try {
+    console.log("Loading face detection models...");
+    await loadModels();
+    faceIndex = loadIndex();
+    console.log(`Face index loaded: ${faceIndex.length} photos indexed.`);
+  } catch (err) {
+    console.warn("Face detection unavailable (models not loaded):", err.message);
+    console.warn("Static files will still be served normally.");
   }
 
   app.listen(PORT, () => {
-    console.log(`\nWedding Photo Finder running at http://localhost:${PORT}`);
+    console.log(`\nServer running at http://localhost:${PORT}`);
   });
 }
 
