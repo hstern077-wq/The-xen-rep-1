@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>פולס הנוף — Landscape Pulse</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@200;300;400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    :root {
+      --bg: #F4EFE6;
+      --bg-alt: #EDE6D8;
+      --sand: #E2D5C0;
+      --sand-dark: #C8B898;
+      --stone: #A09080;
+      --stone-light: #C8BEB2;
+      --moss: #5A7048;
+      --moss-light: #7A9460;
+      --moss-pale: #C8D4B8;
+      --olive: #708050;
+      --desert: #C07848;
+      --desert-light: #D49468;
+      --sky: #98B8C8;
+      --sky-light: #C8DDE8;
+      --text: #2A201A;
+      --text-med: #4A3C34;
+      --text-light: #6A5C54;
+      --text-muted: #9A8E88;
+      --white: #FDFAF4;
+      --card-bg: rgba(253, 250, 244, 0.94);
+      --card-border: rgba(200, 185, 160, 0.45);
+      --shadow: 0 4px 24px rgba(42, 32, 26, 0.07);
+      --shadow-hover: 0 10px 44px rgba(42, 32, 26, 0.13);
+      --radius: 20px;
+      --radius-sm: 10px;
+      --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      --transition: 0.38s var(--ease);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Heebo', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; overflow-x: hidden; }
+    h1, h2, h3 { font-weight: 300; line-height: 1.2; letter-spacing: -0.02em; }
+    p { font-weight: 300; }
+    a { color: inherit; text-decoration: none; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--sand-dark); border-radius: 3px; }
+    .en { font-family: 'Cormorant Garamond', serif; }
+
+    /* PROGRESS BAR */
+    #progress-bar {
+      position: fixed; top: 0; right: 0; height: 2px; background: var(--moss-light);
+      width: 0%; z-index: 1000; transition: width 0.1s linear;
+    }
+
+    /* HERO */
+    .hero {
+      position: relative; min-height: 100vh;
+      display: flex; flex-direction: column; justify-content: center; align-items: flex-end;
+      padding: 7rem 9vw 5rem; overflow: hidden;
+    }
+    .hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+    .hero-gradient {
+      position: absolute; inset: 0; z-index: 1;
+      background: linear-gradient(-45deg, #F0E8D8, #EAE0CA, #DCE8D0, #E4D8C2, #E8DCC8, #D4E0CC, #E0D4B8, #EAE4D0);
+      background-size: 400% 400%;
+      animation: gradShift 18s ease infinite;
+    }
+    @keyframes gradShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+    .hero-sun {
+      position: absolute; top: -80px; right: -80px; width: 400px; height: 400px;
+      border-radius: 50%; z-index: 1;
+      background: radial-gradient(circle, rgba(220,180,100,0.35) 0%, rgba(220,180,100,0.1) 50%, transparent 70%);
+      animation: sunPulse 8s ease-in-out infinite;
+    }
+    @keyframes sunPulse { 0%,100%{transform:scale(1);opacity:0.7} 50%{transform:scale(1.15);opacity:1} }
+    .hero-content { position: relative; z-index: 2; max-width: 680px; text-align: right; }
+    .hero-eyebrow {
+      font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--moss); font-weight: 500; margin-bottom: 1.2rem;
+      display: flex; align-items: center; justify-content: flex-end; gap: 0.8rem;
+    }
+    .eyebrow-dot { width: 5px; height: 5px; background: var(--moss); border-radius: 50%; display: inline-block; }
+    .hero-title {
+      font-size: clamp(3rem, 7vw, 6rem); color: var(--text); margin-bottom: 0.4rem;
+      text-shadow: 0 2px 30px rgba(240,220,190,0.6);
+    }
+    .hero-title-en {
+      font-family: 'Cormorant Garamond', serif; font-size: clamp(1rem, 2vw, 1.5rem);
+      color: var(--text-muted); letter-spacing: 0.18em; font-weight: 300; margin-bottom: 2rem;
+    }
+    .hero-quote {
+      font-size: 1.05rem; color: var(--moss-light); font-weight: 300; line-height: 1.85;
+      border-right: 2px solid var(--moss-pale); padding-right: 1.4rem;
+      margin-bottom: 2.5rem; max-width: 520px;
+    }
+    .hero-meta { display: flex; gap: 2.5rem; align-items: center; }
+    .hero-date, .hero-weather {
+      font-size: 0.8rem; color: var(--text-light); font-weight: 300;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .hero-icon { font-size: 1rem; }
+    .hero-dedication {
+      position: absolute; bottom: 3rem; left: 9vw;
+      font-family: 'Cormorant Garamond', serif; font-size: 0.82rem; font-style: italic;
+      color: var(--text-muted); letter-spacing: 0.12em;
+    }
+    .hero-illustration {
+      position: absolute; bottom: 0; left: 0; width: 45vw; height: 60vh;
+      z-index: 1; opacity: 0.18; pointer-events: none;
+    }
+    .scroll-hint {
+      position: absolute; bottom: 2.5rem; right: 9vw; z-index: 2;
+      font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.15em;
+      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    }
+    .scroll-hint-line {
+      width: 1px; height: 40px; background: linear-gradient(to bottom, var(--text-muted), transparent);
+      animation: scrollLine 2s ease-in-out infinite;
+    }
+    @keyframes scrollLine { 0%,100%{opacity:0.3;transform:scaleY(0.5)} 50%{opacity:0.8;transform:scaleY(1)} }
+
+    /* NAV */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(244,239,230,0.88); backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 0.9rem 9vw;
+      display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    }
+    .nav-brand h1 { font-size: 1.15rem; font-weight: 600; color: var(--moss); line-height: 1; }
+    .nav-brand span { font-family: 'Cormorant Garamond', serif; font-size: 0.78rem; color: var(--text-muted); letter-spacing: 0.12em; font-weight: 300; }
+    .nav-controls { display: flex; gap: 0.8rem; align-items: center; }
+    .search-wrap { position: relative; }
+    .search-input {
+      background: rgba(255,252,248,0.9); border: 1px solid var(--card-border);
+      border-radius: 30px; padding: 0.5rem 1rem 0.5rem 2.4rem;
+      font-family: 'Heebo', sans-serif; font-size: 0.82rem; color: var(--text);
+      width: 200px; outline: none; direction: rtl; transition: var(--transition);
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-input:focus { border-color: var(--moss-light); width: 260px; box-shadow: 0 0 0 3px rgba(122,148,96,0.12); }
+    .search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem; pointer-events: none; }
+    .mode-toggle { display: flex; background: var(--sand); border-radius: 30px; padding: 3px; gap: 2px; }
+    .mode-btn {
+      padding: 0.38rem 0.9rem; border-radius: 26px; border: none;
+      background: transparent; font-family: 'Heebo', sans-serif; font-size: 0.76rem;
+      color: var(--text-light); cursor: pointer; transition: var(--transition); white-space: nowrap;
+    }
+    .mode-btn.active { background: var(--white); color: var(--moss); font-weight: 500; box-shadow: 0 2px 10px rgba(42,32,26,0.1); }
+
+    /* FILTERS */
+    .filters {
+      padding: 1rem 9vw; background: var(--bg-alt);
+      border-bottom: 1px solid var(--card-border); overflow-x: auto; scrollbar-width: none;
+    }
+    .filters::-webkit-scrollbar { display: none; }
+    .filters-inner { display: flex; gap: 0.5rem; align-items: center; min-width: max-content; flex-direction: row-reverse; }
+    .filter-label { font-size: 0.72rem; color: var(--text-muted); margin-right: 0.6rem; white-space: nowrap; }
+    .filter-chip {
+      padding: 0.35rem 0.95rem; border-radius: 20px; border: 1px solid var(--card-border);
+      background: transparent; font-family: 'Heebo', sans-serif; font-size: 0.77rem;
+      color: var(--text-light); cursor: pointer; transition: var(--transition); white-space: nowrap;
+    }
+    .filter-chip:hover { border-color: var(--moss-light); color: var(--moss); background: rgba(122,148,96,0.07); }
+    .filter-chip.active { background: var(--moss); border-color: var(--moss); color: white; }
+    .filter-clear { padding: 0.35rem 0.85rem; border-radius: 20px; border: none; background: transparent; font-family: 'Heebo', sans-serif; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; }
+    .filter-clear:hover { color: var(--desert); }
+
+    /* MAIN */
+    .main { padding: 3.5rem 9vw; }
+    .section { margin-bottom: 5.5rem; }
+    .section.hidden-section { display: none; }
+    .section-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2.2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--card-border); }
+    .section-label { display: flex; flex-direction: column; gap: 0.15rem; }
+    .section-name { font-size: 1.7rem; font-weight: 300; color: var(--text); display: flex; align-items: center; gap: 0.7rem; }
+    .section-icon { font-size: 1.2rem; }
+    .section-name-en { font-family: 'Cormorant Garamond', serif; font-size: 0.8rem; color: var(--text-muted); letter-spacing: 0.14em; font-style: italic; }
+    .section-count { font-size: 0.75rem; color: var(--text-muted); padding-bottom: 0.2rem; }
+
+    /* CARDS GRID */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+    .cards-grid.wide { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
+    .cards-grid.narrow { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+
+    /* CARD BASE */
+    .card {
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      border-radius: var(--radius); padding: 1.6rem;
+      transition: var(--transition); cursor: pointer;
+      position: relative; overflow: hidden;
+      animation: fadeUp 0.5s var(--ease) both;
+    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    .card::after {
+      content: ''; position: absolute; top: 0; right: 0;
+      width: 3px; height: 0; background: linear-gradient(to bottom, var(--moss-light), var(--moss-pale));
+      transition: height 0.35s var(--ease); border-radius: 0 var(--radius) 0 0;
+    }
+    .card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); border-color: rgba(122,148,96,0.28); }
+    .card:hover::after { height: 100%; }
+    .card.bookmarked { border-color: rgba(192,120,72,0.35); }
+    .card.card-hidden { display: none; }
+
+    .card-thumb {
+      width: calc(100% + 3.2rem); margin: -1.6rem -1.6rem 1.4rem;
+      height: 160px; overflow: hidden; border-radius: var(--radius) var(--radius) 0 0;
+      display: flex; align-items: center; justify-content: center; font-size: 3.5rem;
+      position: relative;
+    }
+    .card-thumb::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40%;
+      background: linear-gradient(to top, var(--card-bg), transparent);
+    }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 0.38rem; margin-bottom: 0.75rem; }
+    .tag {
+      font-size: 0.66rem; padding: 0.18rem 0.65rem; border-radius: 12px;
+      background: rgba(90,112,72,0.1); color: var(--moss); font-weight: 500;
+    }
+    .tag.t-desert { background: rgba(192,120,72,0.12); color: var(--desert); }
+    .tag.t-water { background: rgba(152,184,200,0.18); color: #5080A0; }
+    .tag.t-research { background: rgba(100,80,160,0.1); color: #7060B0; }
+    .tag.t-israel { background: rgba(60,120,200,0.1); color: #3870B8; }
+    .tag.t-bio { background: rgba(80,140,80,0.12); color: #407840; }
+    .card-title { font-size: 1.05rem; font-weight: 500; color: var(--text); margin-bottom: 0.55rem; line-height: 1.45; }
+    .card-excerpt { font-size: 0.86rem; color: var(--text-light); line-height: 1.8; margin-bottom: 1rem; }
+    .card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.73rem; color: var(--text-muted); padding-top: 0.75rem; border-top: 1px solid rgba(200,185,160,0.3); }
+    .card-actions { display: flex; gap: 0.5rem; }
+    .card-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1rem; padding: 0.15rem; transition: color 0.2s; line-height: 1; }
+    .card-btn:hover { color: var(--desert); }
+    .card-btn.bookmarked { color: var(--desert); }
+    .card-expand-btn { font-size: 0.73rem; color: var(--moss); font-weight: 500; }
+    .card-expand-btn:hover { color: var(--moss-light); }
+
+    .card-expanded { display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--card-border); animation: expandIn 0.3s var(--ease); }
+    @keyframes expandIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+    .card.open .card-expanded { display: block; }
+    .card-expanded p { font-size: 0.85rem; color: var(--text-med); line-height: 1.85; margin-bottom: 0.7rem; }
+    .card-expanded ul { padding-right: 1.2rem; margin-top: 0.5rem; }
+    .card-expanded li { font-size: 0.83rem; color: var(--text-med); margin-bottom: 0.4rem; line-height: 1.7; }
+
+    /* RESEARCH CARD */
+    .insight-box {
+      background: rgba(90,112,72,0.07); border-right: 3px solid var(--moss-pale);
+      padding: 0.75rem 1rem; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 0.7rem 0;
+    }
+    .insight-box h4 { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--moss); margin-bottom: 0.25rem; font-weight: 600; }
+    .insight-box p { font-size: 0.82rem; color: var(--text-med); margin: 0 !important; }
+    .insight-box.imp { background: rgba(192,120,72,0.07); border-color: rgba(192,120,72,0.3); }
+    .insight-box.imp h4 { color: var(--desert); }
+
+    /* PLANT CARD */
+    .plant-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.9rem; }
+    .plant-icon-wrap {
+      width: 50px; height: 50px; border-radius: var(--radius-sm); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
+      background: linear-gradient(135deg, var(--moss-pale), var(--moss-light));
+    }
+    .plant-pills { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.7rem; }
+    .plant-pill { font-size: 0.7rem; padding: 0.2rem 0.75rem; border-radius: 12px; background: var(--bg); color: var(--text-light); border: 1px solid var(--card-border); }
+
+    /* POETRY CARD */
+    .poetry-card { padding: 0; }
+    .poetry-thumb {
+      height: 200px; width: 100%; display: flex; align-items: center; justify-content: center;
+      font-size: 4rem; position: relative; overflow: hidden;
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+    .poetry-thumb::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 50%;
+      background: linear-gradient(to top, rgba(0,0,0,0.25), transparent);
+    }
+    .poetry-inner { padding: 1.4rem; }
+    .poetry-location { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .poetry-philosophy { font-size: 0.82rem; color: var(--text-light); font-style: italic; line-height: 1.75; margin-bottom: 0.6rem; }
+    .mood-words { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.6rem; }
+    .mood-word { font-family: 'Cormorant Garamond', serif; font-size: 0.78rem; color: var(--text-muted); font-style: italic; }
+    .mood-word::before { content: '— '; }
+
+    /* TREE OF DAY */
+    .tree-layout { display: grid; grid-template-columns: 1fr 1.6fr; gap: 2rem; align-items: start; }
+    .tree-visual {
+      border-radius: var(--radius); aspect-ratio: 3/4; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; font-size: 7rem;
+      background: linear-gradient(145deg, #C8D4B8, #8A9E72, #5A7048);
+      position: relative;
+    }
+    .tree-visual::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40%;
+      background: linear-gradient(to top, rgba(42,40,32,0.4), transparent);
+    }
+    .tree-info { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 2rem; }
+    .tree-name-he { font-size: 2.2rem; font-weight: 300; color: var(--text); margin-bottom: 0.3rem; }
+    .tree-name-en { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: var(--text-muted); font-style: italic; margin-bottom: 1.8rem; }
+    .tree-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-bottom: 1.5rem; }
+    .tree-stat { background: var(--bg); border-radius: var(--radius-sm); padding: 0.75rem 0.9rem; }
+    .tree-stat-label { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); margin-bottom: 0.25rem; font-weight: 500; }
+    .tree-stat-value { font-size: 0.88rem; color: var(--text-med); }
+    .tree-facts { list-style: none; }
+    .tree-facts li { font-size: 0.84rem; color: var(--text-med); padding: 0.5rem 0; border-bottom: 1px solid rgba(200,185,160,0.25); line-height: 1.7; display: flex; gap: 0.6rem; }
+    .tree-facts li::before { content: '✦'; color: var(--moss-pale); font-size: 0.7rem; flex-shrink: 0; margin-top: 0.2rem; }
+    .tree-symbol { margin-top: 1.2rem; padding: 0.9rem 1.1rem; background: rgba(90,112,72,0.06); border-radius: var(--radius-sm); font-size: 0.83rem; color: var(--text-med); font-style: italic; line-height: 1.7; }
+
+    /* QUIET SIGNALS */
+    .signals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.2rem; }
+    .signal-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius);
+      padding: 1.4rem; position: relative; overflow: hidden; transition: var(--transition);
+    }
+    .signal-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .signal-card::before {
+      content: ''; position: absolute; top: 0; right: 0; width: 55px; height: 55px;
+      border-radius: 0 var(--radius) 0 100%; background: rgba(90,112,72,0.05);
+    }
+    .signal-icon { font-size: 1.5rem; margin-bottom: 0.9rem; display: block; }
+    .signal-text { font-size: 0.87rem; color: var(--text-med); line-height: 1.8; font-weight: 300; }
+    .signal-source { font-size: 0.68rem; color: var(--text-muted); margin-top: 0.8rem; font-style: italic; }
+
+    /* MAP */
+    .map-section { margin-bottom: 5rem; }
+    .map-wrap { border-radius: var(--radius); overflow: hidden; height: 520px; border: 1px solid var(--card-border); box-shadow: var(--shadow); }
+    #landscape-map { height: 100%; width: 100%; }
+    .leaflet-popup-content-wrapper {
+      background: rgba(253,250,244,0.96) !important; border-radius: var(--radius-sm) !important;
+      border: 1px solid var(--card-border) !important; box-shadow: var(--shadow-hover) !important;
+      backdrop-filter: blur(20px); font-family: 'Heebo', sans-serif;
+    }
+    .leaflet-popup-tip-container { display: none !important; }
+    .leaflet-popup-close-button { color: var(--text-muted) !important; font-size: 1rem !important; }
+    .map-pop-title { font-size: 0.95rem; font-weight: 500; color: var(--text); margin-bottom: 0.3rem; }
+    .map-pop-desc { font-size: 0.78rem; color: var(--text-light); line-height: 1.55; }
+    .map-pop-tag { display: inline-block; font-size: 0.65rem; padding: 0.15rem 0.6rem; border-radius: 10px; background: rgba(90,112,72,0.1); color: var(--moss); margin-top: 0.5rem; }
+
+    /* AMBIENT WIDGET */
+    .ambient-widget { position: fixed; bottom: 2rem; left: 2rem; z-index: 200; }
+    .ambient-toggle {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--moss); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+      box-shadow: 0 4px 22px rgba(90,112,72,0.4); transition: var(--transition);
+    }
+    .ambient-toggle:hover { transform: scale(1.08); box-shadow: 0 6px 30px rgba(90,112,72,0.5); }
+    .ambient-toggle.active { background: var(--desert); box-shadow: 0 4px 22px rgba(192,120,72,0.4); }
+    .ambient-panel {
+      position: absolute; bottom: 64px; left: 0;
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      border-radius: var(--radius); padding: 1.2rem; min-width: 195px;
+      box-shadow: var(--shadow-hover); display: none; backdrop-filter: blur(20px);
+      animation: panelUp 0.25s var(--ease);
+    }
+    @keyframes panelUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .ambient-panel.open { display: block; }
+    .ambient-panel h4 { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.9rem; text-align: center; font-weight: 400; }
+    .ambient-options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    .amb-opt {
+      background: var(--bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm);
+      padding: 0.65rem 0.4rem; cursor: pointer; text-align: center;
+      font-size: 0.76rem; color: var(--text-light); transition: var(--transition); font-family: 'Heebo', sans-serif;
+    }
+    .amb-opt:hover, .amb-opt.active { background: var(--moss-pale); border-color: var(--moss-light); color: var(--moss); }
+    .amb-opt span { font-size: 1.25rem; display: block; margin-bottom: 0.2rem; }
+    .sound-wave { display: none; align-items: center; justify-content: center; gap: 3px; height: 18px; margin-top: 0.85rem; }
+    .sound-wave.playing { display: flex; }
+    .wave-b { width: 3px; background: var(--moss-light); border-radius: 2px; animation: wv 1s ease-in-out infinite; }
+    .wave-b:nth-child(1){animation-delay:0s;height:4px} .wave-b:nth-child(2){animation-delay:.1s;height:8px}
+    .wave-b:nth-child(3){animation-delay:.2s;height:14px} .wave-b:nth-child(4){animation-delay:.3s;height:10px}
+    .wave-b:nth-child(5){animation-delay:.2s;height:14px} .wave-b:nth-child(6){animation-delay:.1s;height:8px}
+    .wave-b:nth-child(7){animation-delay:0s;height:4px}
+    @keyframes wv { 0%,100%{transform:scaleY(0.4)} 50%{transform:scaleY(1)} }
+
+    /* SCROLL TOP */
+    .scroll-top-btn {
+      position: fixed; bottom: 2rem; right: 2rem; width: 44px; height: 44px;
+      border-radius: 50%; background: var(--sand-dark); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 1rem;
+      color: var(--text); box-shadow: var(--shadow); transition: var(--transition);
+      opacity: 0; pointer-events: none;
+    }
+    .scroll-top-btn.visible { opacity: 1; pointer-events: auto; }
+    .scroll-top-btn:hover { background: var(--stone); transform: translateY(-3px); }
+
+    /* NO RESULTS */
+    .no-results { grid-column: 1/-1; text-align: center; padding: 3rem 1rem; color: var(--text-muted); font-size: 0.88rem; }
+
+    /* FOOTER */
+    footer {
+      background: var(--text); color: rgba(255,255,255,0.55); padding: 3.5rem 9vw;
+      text-align: center; font-size: 0.8rem; font-weight: 300;
+    }
+    .footer-brand { font-size: 1.6rem; font-weight: 300; color: rgba(255,255,255,0.85); margin-bottom: 0.4rem; }
+    .footer-en { font-family: 'Cormorant Garamond', serif; font-size: 0.9rem; letter-spacing: 0.15em; color: rgba(200,185,160,0.5); margin-bottom: 1rem; }
+    .footer-dedication { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.95rem; color: rgba(200,185,160,0.65); }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .hero { padding: 5rem 5vw 3rem; align-items: center; }
+      .hero-content { text-align: center; }
+      .hero-quote { border-right: none; border-top: 1px solid var(--moss-pale); padding-right: 0; padding-top: 1rem; }
+      .hero-meta { justify-content: center; }
+      .hero-dedication, .hero-illustration, .scroll-hint { display: none; }
+      .nav { padding: 0.8rem 4vw; }
+      .main { padding: 2rem 4vw; }
+      .filters { padding: 0.8rem 4vw; }
+      .mode-toggle { display: none; }
+      .search-input { width: 140px; }
+      .search-input:focus { width: 180px; }
+      .tree-layout { grid-template-columns: 1fr; }
+      .cards-grid { grid-template-columns: 1fr; }
+      .cards-grid.wide { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div id="progress-bar"></div>
+
+<!-- HERO -->
+<section class="hero">
+  <canvas class="hero-canvas" id="pollen-canvas"></canvas>
+  <div class="hero-gradient"></div>
+  <div class="hero-sun"></div>
+  <svg class="hero-illustration" viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M80 380 C90 300, 130 220, 120 140 C110 60, 160 20, 200 10" stroke="#5A7048" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M120 180 C80 160, 40 170, 20 150" stroke="#5A7048" stroke-width="1" stroke-linecap="round"/>
+    <path d="M115 220 C150 200, 180 210, 200 190" stroke="#5A7048" stroke-width="1" stroke-linecap="round"/>
+    <path d="M110 260 C70 245, 45 255, 30 240" stroke="#5A7048" stroke-width="1" stroke-linecap="round"/>
+    <ellipse cx="20" cy="150" rx="18" ry="10" fill="#5A7048" opacity="0.4" transform="rotate(-30 20 150)"/>
+    <ellipse cx="200" cy="185" rx="22" ry="12" fill="#5A7048" opacity="0.35" transform="rotate(20 200 185)"/>
+    <ellipse cx="30" cy="237" rx="16" ry="9" fill="#5A7048" opacity="0.3" transform="rotate(-20 30 237)"/>
+    <path d="M300 380 C310 320, 280 250, 320 200 C350 160, 340 100, 360 70" stroke="#8A9E72" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/>
+    <path d="M315 230 C350 215, 390 225, 410 205" stroke="#8A9E72" stroke-width="0.9" stroke-linecap="round" opacity="0.5"/>
+    <ellipse cx="415" cy="202" rx="20" ry="11" fill="#8A9E72" opacity="0.25" transform="rotate(15 415 202)"/>
+    <circle cx="200" cy="10" r="4" fill="#C8D4B8" opacity="0.5"/>
+    <circle cx="360" cy="68" r="3" fill="#C8D4B8" opacity="0.4"/>
+    <path d="M420 380 C430 340, 460 290, 450 230 C440 170, 470 130, 480 80" stroke="#C07848" stroke-width="0.8" stroke-linecap="round" opacity="0.25"/>
+  </svg>
+  <div class="hero-content">
+    <div class="hero-eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span id="hero-label">מרחש הנוף היומי</span>
+      <span class="eyebrow-dot"></span>
+    </div>
+    <h1 class="hero-title">פולס הנוף</h1>
+    <p class="hero-title-en en">Landscape Pulse</p>
+    <blockquote class="hero-quote" id="hero-quote">
+      "האדמה מדברת בשפה שאנו רק מתחילים לפענח — בשפת השורשים, הרוח, ובצמחייה שבוחרת לחיות ממש כאן."
+    </blockquote>
+    <div class="hero-meta">
+      <div class="hero-date"><span class="hero-icon">🗓️</span><span id="hero-date">טוען...</span></div>
+      <div class="hero-weather"><span class="hero-icon">☀️</span><span id="hero-weather">בוקר צלול, רוח קלה מן הדרום</span></div>
+    </div>
+  </div>
+  <div class="hero-dedication en">for Stav, with love for the land</div>
+  <div class="scroll-hint"><div class="scroll-hint-line"></div><span>גלול</span></div>
+</section>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand">
+    <h1>פולס הנוף</h1>
+    <span class="en">Landscape Pulse</span>
+  </div>
+  <div class="nav-controls">
+    <div class="search-wrap">
+      <input type="text" class="search-input" id="search-input" placeholder="חפש...">
+      <span class="search-icon">🔍</span>
+    </div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" data-mode="all">הכול</button>
+      <button class="mode-btn" data-mode="research">מחקר</button>
+      <button class="mode-btn" data-mode="inspiration">השראה</button>
+      <button class="mode-btn" data-mode="practical">מעשי</button>
+    </div>
+  </div>
+</nav>
+
+<!-- FILTERS -->
+<div class="filters">
+  <div class="filters-inner">
+    <span class="filter-label">סינון ←</span>
+    <button class="filter-chip active" data-filter="all">הכול</button>
+    <button class="filter-chip" data-filter="israel">ישראל</button>
+    <button class="filter-chip" data-filter="מדבר">מדבר</button>
+    <button class="filter-chip" data-filter="עירוני">עירוני</button>
+    <button class="filter-chip" data-filter="עצים">עצים</button>
+    <button class="filter-chip" data-filter="מים">מים</button>
+    <button class="filter-chip" data-filter="מחקר">מחקר</button>
+    <button class="filter-chip" data-filter="השראה">השראה</button>
+    <button class="filter-chip" data-filter="מגוון ביולוגי">מגוון ביולוגי</button>
+    <button class="filter-chip" data-filter="שיקום אקולוגי">שיקום</button>
+    <button class="filter-chip" data-filter="צמחים מקומיים">צמחים מקומיים</button>
+    <button class="filter-chip" data-filter="אדפטציה לאקלים">אקלים</button>
+    <button class="filter-chip" data-filter="קיימות">קיימות</button>
+    <button class="filter-chip" data-filter="גינות">גינות</button>
+    <button class="filter-chip" data-filter="פרויקטים ציבוריים">פרויקטים ציבוריים</button>
+    <button class="filter-chip" data-filter="מיצפה רמון">מיצפה רמון</button>
+    <button class="filter-clear" id="clear-filters">נקה</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- SECTION 1: FRESH SOIL -->
+  <section class="section" id="sec-news" data-section="news">
+    <div class="section-header">
+      <div class="section-label">
+        <div class="section-name"><span class="section-icon">🌱</span> אדמה טרייה</div>
+        <div class="section-name-en">Fresh Soil · Latest News</div>
+      </div>
+      <span class="section-count" id="count-news"></span>
+    </div>
+    <div class="cards-grid" id="grid-news"></div>
+  </section>
+
+  <!-- SECTION 2: RESEARCH -->
+  <section class="section" id="sec-research" data-section="research">
+    <div class="section-header">
+      <div class="section-label">
+        <div class="section-name"><span class="section-icon">🔬</span> חממת המחקר</div>
+        <div class="section-name-en">Research Greenhouse · Science</div>
+      </div>
+      <span class="section-count" id="count-research"></span>
+    </div>
+    <div class="cards-grid wide" id="grid-research"></div>
+  </section>
+
+  <!-- SECTION 3: PLANT INTELLIGENCE -->
+  <section class="section" id="sec-plants" data-section="plants">
+    <div class="section-header">
+      <div class="section-label">
+        <div class="section-name"><span class="section-icon">🌿</span> אינטליגנציית צמחים</div>
+        <div class="section-name-en">Plant Intelligence · Practical</div>
+      </div>
+      <span class="section-count" id="count-plants"></span>
+    </div>
+    <div class="cards-grid" id="grid-plants"></div>
+  </section>
+
+  <!-- SECTION 4: DESERT FUTURES -->
+  <section class="section" id="sec-desert" data-section="desert">
+    <div class="section-header">
+      <div class="section-label">
+        <div class="section-name"><span class="section-icon">🏜️</span> עתידות המדבר</div>
+        <div class="section-name-en">Desert Futures · Mitzpe Ramon</div>
+      </div>
+      <span class="section-count" id="count-desert"></span>
+    </div>
+    <div class="cards-grid" id="grid-desert"></div>
+  </section>
+
+  <!-- SECTION 5: SPATIAL POETRY -->
+  <section class="section" id="sec-poetry" data-section="poetry">
+    <div class="section-header">
+      <div class="section-label">
+        <div class="section-name"><span class="section-icon">✨</span> שירה מרחבית</div>
+        <div class="section-name-en">Spatial Poetry · Inspiration</div>
+      </div>
+      <span class="section-count" id="count-poetry"></span>
+    </div>
+    <div class="cards-grid wide" id="grid-poetry"></div>
+  </section>
+
+  <!-- SECTION 6: TREE OF THE DAY -->
+  <section class="section" id="sec-tree" data-section="tree">
+    <div class="section-header">
+      <div class="section-label">
+        <div class="section-name"><span class="section-icon">🌳</span> עץ היום</div>
+        <div class="section-name-en">Tree of the Day</div>
+      </div>
+    </div>
+    <div id="tree-content"></div>
+  </section>
+
+  <!-- SECTION 7: QUIET SIGNALS -->
+  <section class="section" id="sec-signals" data-section="signals">
+    <div class="section-header">
+      <div class="section-label">
+        <div class="section-name"><span class="section-icon">💫</span> אותות שקטים</div>
+        <div class="section-name-en">Quiet Signals · Micro-Observations</div>
+      </div>
+    </div>
+    <div class="signals-grid" id="grid-signals"></div>
+  </section>
+
+</main>
+
+<!-- MAP SECTION -->
+<section class="map-section" style="padding: 0 9vw 3rem;">
+  <div class="section-header">
+    <div class="section-label">
+      <div class="section-name"><span class="section-icon">🗺️</span> מפת ההשראה</div>
+      <div class="section-name-en">Inspiration Map · Global Landscape Projects</div>
+    </div>
+  </div>
+  <div class="map-wrap">
+    <div id="landscape-map"></div>
+  </div>
+</section>
+
+<!-- AMBIENT -->
+<div class="ambient-widget">
+  <div class="ambient-panel" id="ambient-panel">
+    <h4>מצב קול סביבתי</h4>
+    <div class="ambient-options">
+      <button class="amb-opt" data-sound="wind"><span>🌬️</span>רוח מדבר</button>
+      <button class="amb-opt" data-sound="birds"><span>🐦</span>ציפורים</button>
+      <button class="amb-opt" data-sound="rain"><span>🌧️</span>גשם רך</button>
+      <button class="amb-opt" data-sound="leaves"><span>🍃</span>עלים</button>
+    </div>
+    <div class="sound-wave" id="sound-wave">
+      <div class="wave-b"></div><div class="wave-b"></div><div class="wave-b"></div>
+      <div class="wave-b"></div><div class="wave-b"></div><div class="wave-b"></div>
+      <div class="wave-b"></div>
+    </div>
+  </div>
+  <button class="ambient-toggle" id="ambient-toggle" title="קול סביבתי">🎵</button>
+</div>
+
+<!-- SCROLL TOP -->
+<button class="scroll-top-btn" id="scroll-top-btn" title="חזור למעלה">↑</button>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">פולס הנוף</div>
+  <div class="footer-en en">Landscape Pulse</div>
+  <p>מרכז ידע חי לאדריכלות נוף, אקולוגיה עירונית, ועיצוב סביבתי</p>
+  <div class="footer-dedication en">dedicated to Stav — for the love of landscape, desert, and all that grows</div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const newsData = [
+  {
+    id:'n1', emoji:'🌵',
+    grad:'linear-gradient(135deg,#D4C4A0,#B0A880,#7A8850)',
+    title:'מיצפה רמון מציגה תוכנית ייעור מדברית חלוצית',
+    excerpt:'עיריית מיצפה רמון השיקה תוכנית לנטיעת 5,000 עצי מקום בשטחים ציבוריים — מיזם ייחודי לשינוי האקלים המקומי ולהפחתת טמפרטורות הרחוב בקיץ.',
+    source:'ערים ירוקות, ישראל', date:'מרץ 2025',
+    tags:['ישראל','מדבר','עצים','פרויקטים ציבוריים','מיצפה רמון'],
+    tc:['t-israel','t-desert','','',''],
+    more:'הפרויקט כולל נטיעת אלות פלסטיניות, שיטי מדבר, וחרובים לאורך הרחובות הראשיים. מטרה ליצור 40% כיסוי צמחי עד שנת 2030. האדריכל שמעון לוי אחראי על עיצוב הנוף.'
+  },
+  {
+    id:'n2', emoji:'💧',
+    grad:'linear-gradient(135deg,#88A8C0,#6890A8,#4A7888)',
+    title:'שיקום נחל הקישון: ריוואילדינג בצפון ישראל',
+    excerpt:'פרויקט משותף לקרן קיסריה ורשות הטבע לשיקום 12 ק"מ לאורך נחל הקישון — מסדרון אקולוגי ממדיטרני עד מפרץ חיפה.',
+    source:'רשות הטבע והגנים',date:'ינואר 2025',
+    tags:['ישראל','שיקום אקולוגי','מים','מגוון ביולוגי'],
+    tc:['t-israel','','t-water','t-bio'],
+    more:'הפרויקט כולל הסרת אקליפטוסים פולשים, שתילת 15,000 ורבנים, צפצפות ואשלים, ובנייה מחודשת של שוליים בוציים. צפי להחזרת 80 מינים של ציפורי מים.'
+  },
+  {
+    id:'n3', emoji:'🌳',
+    grad:'linear-gradient(135deg,#A8C090,#7A9860,#5A7840)',
+    title:'ורשה: 2,000 חניות הוסבו לגינות עצים',
+    excerpt:'מהפך עירוני היסטורי בפולין: מקומות חנייה מוסבים לגינות עצים ברחובות המרכז — הפחתת 3.5 מעלות בטמפ\' הרחוב.',
+    source:'Landscape Architecture Europe',date:'פברואר 2025',
+    tags:['עולם','עירוני','עצים','אדפטציה לאקלים'],
+    tc:['','','',''],
+    more:'מחקר מ-2024 של אוניברסיטת ורשה הוכיח שצמחייה עירונית צפופה מפחיתה את טמפרטורת השטח ב-3.5°C ואת מדדי הסטרס של תושבים ב-28%.'
+  },
+  {
+    id:'n4', emoji:'🌿',
+    grad:'linear-gradient(135deg,#80A870,#509058,#2A6840)',
+    title:'סינגפור: 100 גגות ירוקים ציבוריים חדשים',
+    excerpt:'שלב חדש בתוכנית "עיר בתוך גן" — 100 גגות עם צמחייה מקומית, מערכות קציר מי גשמים, ומסדרונות ביולוגיים.',
+    source:'National Parks Board Singapore',date:'פברואר 2025',
+    tags:['עולם','עירוני','קיימות','השראה'],
+    tc:['','','',''],
+    more:'הגגות כוללים צמחייה מקומית דרום-מזרח אסייתית, כוורות דבורים עירוניות, ומסדרוני עצים בין בניינים לתמיכה בחיות בר.'
+  },
+  {
+    id:'n5', emoji:'🌆',
+    grad:'linear-gradient(135deg,#C0B090,#A09070,#787050)',
+    title:'ניו יורק: אסטרטגיית היער העירוני 2025–2030',
+    excerpt:'עיריית ניו יורק הציגה תוכנית לנטיעת 250,000 עצים נוספים עם דגש על שכונות חסרות ירוק ונפגעות מאי-חום.',
+    source:'NYC Parks Department',date:'ינואר 2025',
+    tags:['עולם','עירוני','עצים','פרויקטים ציבוריים'],
+    tc:['','','',''],
+    more:'דגש מיוחד על שכונות בהן פחות מ-15% ממרחבי הרחוב מוצלים. כל עץ נבחר לפי עמידות לאקלים משתנה, גובה, ועמידות לחום.'
+  },
+  {
+    id:'n6', emoji:'🏜️',
+    grad:'linear-gradient(135deg,#D4956A,#B07040,#804820)',
+    title:'ריוואילדינג הנגב: שיקום מגוון ביולוגי',
+    excerpt:'ארגוני שיקום ישראליים מובילים מיזם לשיקום 100,000 דונם בנגב — עשבוניים, שיחים מקומיים, וקישוריות אקולוגית.',
+    source:'האגודה להגנת הטבע',date:'מרץ 2025',
+    tags:['ישראל','מדבר','מגוון ביולוגי','שיקום אקולוגי'],
+    tc:['t-israel','t-desert','t-bio',''],
+    more:'המיזם כולל ניטור קרקע שוטף, זרעים מגנטיקה מגוונת, ושיתוף עם מומחים בדואים לידע מסורתי על טבע הנגב.'
+  }
+];
+
+const researchData = [
+  {
+    id:'r1',
+    title:'השפעת עצי רחוב על האקלים המיקרו-עירוני בערים ים-תיכוניות',
+    authors:'לוי, כהן ואחרים — אוניברסיטת תל אביב',
+    date:'ינואר 2025', journal:'Urban Ecology Journal',
+    tags:['מחקר','עצים','עירוני','ישראל'],
+    tc:['t-research','','','t-israel'],
+    insight:'עצי רחוב בגובה 8–12 מ׳ מפחיתים טמפרטורת רצפה ב-4–8°C ביום קיץ ים-תיכוני.',
+    matters:'תוצאות אלו תומכות בנטיעת עצים מוצלים בממדים גדולים ברחובות עירוניים במזרח התיכון.',
+    application:'תכנית עצי רחוב הלוקחת בחשבון גובה, מיקום, ומרחק בין עצים לאופטימום צל.',
+    relevance:'ישראל · ים-תיכוני · אקלים חם'
+  },
+  {
+    id:'r2',
+    title:'מסדרונות צמחייה מקומית ושיקום אוכלוסיות מאביקים',
+    authors:'Ben-David et al. — Hebrew University',
+    date:'פברואר 2025', journal:'Ecological Restoration',
+    tags:['מחקר','מגוון ביולוגי','צמחים מקומיים','ישראל'],
+    tc:['t-research','t-bio','','t-israel'],
+    insight:'מסדרון של 200 מ׳ בין גינות ירוקות עירוניות מגדיל פי 3 את אוכלוסיית הדבורים.',
+    matters:'40% ממינים המאביקים בישראל בסכנת הכחדה. מסדרונות ירוקים עירוניים — כלי קריטי.',
+    application:'עיצוב מסדרונות ירוקים מחוברים בין פארקים, גגות ירוקים, ונקודות ציבוריות.',
+    relevance:'ישראל · ים-תיכוני · עולם'
+  },
+  {
+    id:'r3',
+    title:'קציר מי גשמים בנגב: לקחים מ-50 שנות מחקר שדה',
+    authors:'Zilber & Schwartz — Ben-Gurion University',
+    date:'ינואר 2025', journal:'Arid Land Research & Management',
+    tags:['מחקר','מים','מדבר','ישראל'],
+    tc:['t-research','t-water','t-desert','t-israel'],
+    insight:'מערכות לולים (Liman) בשטחים מדבריים לוכדות עד 70% ממי הגשם בעונת הגשמים.',
+    matters:'בשטחים עם 50–150 מ"מ גשם שנתי, קציר מים הוא הכלי החשוב ביותר לצמחייה בת-קיימא.',
+    application:'תכנון נוף מדברי עם לולים, ואדיות מנוהלים, ומפלסי מים זעירים (micro-catchments).',
+    relevance:'מיצפה רמון · נגב · מדבר · אקלים חם'
+  },
+  {
+    id:'r4',
+    title:'Rewilding Urban Spaces: Mediterranean Case Studies 2024',
+    authors:'Herrero, García et al. — Barcelona University',
+    date:'מרץ 2025', journal:'Landscape and Urban Planning',
+    tags:['מחקר','שיקום אקולוגי','עירוני','עולם'],
+    tc:['t-research','','',''],
+    insight:'ריוואילדינג של 5% בלבד ממשטח עירוני מגדיל את מגוון המינים ב-60%.',
+    matters:'ערים ים-תיכוניות יכולות להיות נקודות חמות של מגוון ביולוגי עם מינימום השקעה.',
+    application:'זיהוי פינות "פראיות" ומתן אפשרות להתפתח ללא התערבות אנושית.',
+    relevance:'ים-תיכוני · עולם · עירוני'
+  }
+];
+
+const plantData = [
+  {
+    id:'pl1', icon:'🌳',
+    title:'עצים לרחובות עירוניים יבשים',
+    excerpt:'מינים מומלצים לרחובות באקלים ים-תיכוני ומדברי — עמידים, מוצלים, ומקומיים.',
+    tags:['עצים','עירוני','צמחים מקומיים','אדפטציה לאקלים'],
+    pills:['מים: נמוך','עמידות: גבוהה','צל: מעולה','תחזוקה: קלה'],
+    more:'האלה הפלסטינית, החרוב, הסביון הגדול, צפצפת הפרת — עצים מקומיים שמסתגלים לחום וליובש, מספקים צל ופריחה לאביב, ודורשים מינימום מים לאחר ביסוס. לנטוע בסתיו לביסוס שורשים לפני הקיץ.',
+    tips:['נטיעה בסתיו — ביסוס לפני הקיץ','שכבת מולץ עבה 12–15 ס"מ','להמנע מהשקיה רדודה תכופה']
+  },
+  {
+    id:'pl2', icon:'☀️',
+    title:'אסטרטגיות צל לאיי חום עירוניים',
+    excerpt:'תכנון צמחייה לפיזור חום — ממסגרות עצים ועד גינות גג — פחות 5 מעלות בקיץ.',
+    tags:['עירוני','אדפטציה לאקלים','עצים','קיימות'],
+    pills:['השפעה: גבוהה','עלות: בינונית','זמן: 3–5 שנים'],
+    more:'שילוב עצי קומת ביניים (6–12 מ׳) עם כיסוי קרקע מוצל מגדיל אפקטיביות. תכנון נכון: עצים גדולים בצד הדרום-מערבי של הרחוב, ספסלים בצל, ומשטחי אבן בהירים.',
+    tips:['מטפסים על גדרות — מפחיתים חום קיר ב-30%','עצי מטרייה לשטחים פתוחים','גגות ירוקים לבניינים קיימים']
+  },
+  {
+    id:'pl3', icon:'🌸',
+    title:'צמחים מושכי מאביקים בישראל',
+    excerpt:'מינים ישראליים מקומיים שמושכים דבורים, פרפרים ופרחי בר — לגינות עירוניות.',
+    tags:['מגוון ביולוגי','צמחים מקומיים','גינות','ישראל'],
+    pills:['מים: נמוך-בינוני','פריחה: אביב–קיץ','תחזוקה: נמוכה'],
+    more:'כלנית ארץ-ישראלית, מרווה ירושלמית, קידה שעירה, ורד הכלב — מספקים מזון למאביקים ומוסיפים צבע. להמנע מחומרי הדברה ולאפשר "גידול פרוע" בחלקות.',
+    tips:['להמנע לחלוטין מהדברה כימית','גינת בר קטנה ליד כל גינת גן','להשאיר פרחים יבשים לחרקים']
+  },
+  {
+    id:'pl4', icon:'💧',
+    title:'השקיה יעילה בנוף מדברי',
+    excerpt:'מערכות טפטוף, קציר מי גשמים, ועיצוב טופוגרפי — עד 70% חיסכון במים.',
+    tags:['מים','מדבר','קיימות','ישראל'],
+    pills:['חיסכון: עד 70%','התקנה: פשוטה','ROI: 3–5 שנים'],
+    more:'שילוב לולים (מאגרי עצור קטנים), שפכי ניקוז מכוונים, ומערכות טפטוף עמוקות מאפשר גינה מדברית פורחת גם ב-100 מ"מ גשם שנתי. תכנן כיוון זרימה לפני נטיעה.',
+    tips:['תכנן כיוון זרימת מים לפני נטיעה','שכבת מולץ 10–15 ס"מ חובה','מיכלי פולי-אתילן לקציר גשמים']
+  },
+  {
+    id:'pl5', icon:'🌿',
+    title:'כיסוי קרקע לאקלים חם — חלופות לדשא',
+    excerpt:'רצפת קרקע ירוקה חסכנית: 90% פחות מים מדשא, עמידה לדריכה ולחום.',
+    tags:['צמחים מקומיים','קיימות','עירוני','גינות'],
+    pills:['מים: מינימלי','עמידות דריכה: בינונית','ניהול: קל'],
+    more:'שורש צלע ארגמן, גזורית, לוונדר, ואורגנו — כיסויי קרקע מקומיים נמוכים, ירוקים ועמידים לחום. מחליפים דשא בשטחים ציבוריים ופרטיים. אין לדשן — מחזקים עצמאות.',
+    tips:['לנטוע ב-15 ס"מ רווח','חיפוי בחצץ עדין בין הצמחים','לא לדשן — מחזקים עצמאות']
+  },
+  {
+    id:'pl6', icon:'🌱',
+    title:'גינת גג בנגב — מדריך מדברי',
+    excerpt:'גינת גג בתנאי חום קיצוניים: בחירת מכלים, ניהול חום, ומינים מתאימים לנגב.',
+    tags:['מדבר','עירוני','גינות','מים'],
+    pills:['גובה טמפ\': עד 50°C','קרקע: בגינות מכל','אור: מלא'],
+    more:'בתנאי מדבר גגות מתחממים ל-70°C. מכלים לבנים עמוקים (40+ ס"מ), כיסוי מחזיר אור, ומינים כמו בזיליקום, נענע, צלפים, ותאנה מאפשרים גינה פורחת גם בנגב.',
+    tips:['גגות כהים — לא. רק בהיר/לבן','הצלה 50% בשעות 11–15','השקיה רק בבוקר מוקדם']
+  }
+];
+
+const desertData = [
+  {
+    id:'d1', emoji:'🏜️',
+    grad:'linear-gradient(135deg,#D4956A,#C07848,#8A5030)',
+    title:'מיצפה רמון: חזון הנוף 2030',
+    excerpt:'מפת דרכים לנוף עירוני מדברי בת-קיימא — שילוב ייעור, קציר מים, ותיירות אקולוגית.',
+    tags:['מדבר','ישראל','פרויקטים ציבוריים','מיצפה רמון'],
+    tc:['t-desert','t-israel','',''],
+    more:'חזון 2030 כולל גנים ציבוריים ב-40 דונם, מסלולי הליכה מוצלים, בנייה עם אבן רמון וסיד מקומי, וקציר מי גשמים ציבורי. כל פרויקט מיועד ליצור "אואזיס עירוני" מקומי.'
+  },
+  {
+    id:'d2', emoji:'🌱',
+    grad:'linear-gradient(135deg,#A06038,#7A4828,#C07848)',
+    title:'ביו-שיקום: 100,000 דונם בנגב',
+    excerpt:'מיזם רב-שנתי לשיקום מגוון ביולוגי בנגב — נטיעות מקומיות, ניטור קרקע ושיתוף קהילתי.',
+    tags:['מדבר','ישראל','שיקום אקולוגי','מגוון ביולוגי'],
+    tc:['t-desert','t-israel','','t-bio'],
+    more:'המיזם כולל ניטור קבוע של בריאות הקרקע, זרעים ממקורות גנטיים מגוונים, ושיתוף עם בדואים מקומיים לידע מסורתי על הנגב.'
+  },
+  {
+    id:'d3', emoji:'🌫️',
+    grad:'linear-gradient(135deg,#7888A8,#5868A0,#C07848)',
+    title:'קציר ערפל ולחות: טכנולוגיה מדברית',
+    excerpt:'רשתות לכידת ערפל ועיבוי טל — פוטנציאל של 10–50 ליטר למ"ר ביום בנגב.',
+    tags:['מדבר','מים','מחקר','ישראל'],
+    tc:['t-desert','t-water','t-research','t-israel'],
+    more:'בנגב הצפוני, ריכוז הטל הלילי יכול להגיע ל-0.5–2 מ"מ בלילה. מחקרי BGU חוקרים רשתות ביו-מימטיות בהשראת פשפש המדבר.'
+  },
+  {
+    id:'d4', emoji:'🏗️',
+    grad:'linear-gradient(135deg,#C4A880,#A08060,#707050)',
+    title:'ארכיטקטורת מדבר: חומרים מקומיים וקירות מסה',
+    excerpt:'שימוש בחומרים טבעיים — אבן, טיח סיד, ולבנת אדמה — לבינוי עמיד לחום בנגב.',
+    tags:['מדבר','קיימות','ישראל'],
+    tc:['t-desert','','t-israel'],
+    more:'בנייה מסורתית בנגב: קירות מסה תרמית גדולים, חלונות מינימליים, חצרות פנימיות. שילוב בידוד מודרני וגגות ירוקים — בית פסיבי מושלם לאקלים חם.'
+  },
+  {
+    id:'d5', emoji:'🌊',
+    grad:'linear-gradient(135deg,#8898A8,#C0A870,#A08060)',
+    title:'שיקום ואדיות: ערוצי חיים עונתיים',
+    excerpt:'ואדיות — ערוצי שטפונות עונתיים — כמסגרת לנוף אקולוגי מדברי חי ופעיל.',
+    tags:['מדבר','מים','שיקום אקולוגי','ישראל'],
+    tc:['t-desert','t-water','','t-israel'],
+    more:'ואדי ציין, ואדי רמון, ואדי זין — מסלולי חיים עונתיים. שתילת צמחים קוצרי-מים לאורך שוליים מחזירה חיות רבה לאזורים אלה.'
+  }
+];
+
+const poetryData = [
+  {
+    id:'p1', emoji:'🌿',
+    grad:'linear-gradient(160deg,#6A7848,#4A6038,#8A9E72)',
+    title:'The High Line',
+    location:'ניו יורק, ארה"ב',
+    philosophy:'שימוש חוזר בתשתית תעשייתית כמרחב ירוק צף — שילוב חלודה ופריחה.',
+    materials:'פלדה, עץ, צמחיית בר ים-תיכונית',
+    mood:['אורבני','ציר תנועה','ירוק על גבי עיר'],
+    tags:['עולם','עירוני','השראה','פרויקטים ציבוריים']
+  },
+  {
+    id:'p2', emoji:'🌺',
+    grad:'linear-gradient(160deg,#4A7860,#2A5840,#70A880)',
+    title:'Gardens by the Bay',
+    location:'סינגפור',
+    philosophy:'טבע ממוסגר בארכיטקטורה — כאשר הגן עצמו הוא הבניין.',
+    materials:'פלדת ספייס-פריים, צמחייה טרופית, גשרים אוויריים',
+    mood:['עתידני','קסום','טרופי'],
+    tags:['עולם','עירוני','השראה','קיימות']
+  },
+  {
+    id:'p3', emoji:'🎨',
+    grad:'linear-gradient(160deg,#7848A0,#204888,#286840)',
+    title:'Superkilen',
+    location:'קופנהגן, דנמרק',
+    philosophy:'כל אלמנט בפארק מגיע ממדינה שונה — פסיפס תרבויות בשטח ציבורי.',
+    materials:'טיח צבעוני, בזלת, חרסינה, עץ אקזוטי',
+    mood:['צבעוני','כולל','מגוון','נועז'],
+    tags:['עולם','עירוני','השראה','פרויקטים ציבוריים']
+  },
+  {
+    id:'p4', emoji:'🌲',
+    grad:'linear-gradient(160deg,#5A7840,#3A5830,#8A9E72)',
+    title:'Bosco Verticale',
+    location:'מילאנו, איטליה',
+    philosophy:'צמחייה כחזות בניין — 800 עצים, 4,500 שיחים, שני מגדלים.',
+    materials:'בטון, ספרה מוסרת, עץ, צמחייה ים-תיכונית',
+    mood:['אנכי','ביופיליך','מרהיב'],
+    tags:['עולם','עירוני','השראה','קיימות']
+  },
+  {
+    id:'p5', emoji:'🏖️',
+    grad:'linear-gradient(160deg,#D4B878,#B09050,#808858)',
+    title:'גן הטבעות, תל אביב',
+    location:'תל אביב, ישראל',
+    philosophy:'שילוב צמחייה מקומית עם חלל ציבורי — גן ים-תיכוני אותנטי ופתוח.',
+    materials:'אבן כורכר, צמחיית בתה, ספסלי בזלת',
+    mood:['מקומי','רגוע','ים-תיכוני','חם'],
+    tags:['ישראל','עירוני','השראה','פרויקטים ציבוריים']
+  },
+  {
+    id:'p6', emoji:'🌊',
+    grad:'linear-gradient(160deg,#688898,#487080,#38A090)',
+    title:'Cheonggyecheon Stream',
+    location:'סיאול, קוריאה',
+    philosophy:'מכביש מוגבה לנחל עירוני — שיקום מים בלב מטרופולין עצום.',
+    materials:'בטון, אבני נחל, מדרגות מים, גשרוני קיסוס',
+    mood:['מיים','עכשווי','אנושי'],
+    tags:['עולם','עירוני','השראה','שיקום אקולוגי']
+  }
+];
+
+const treeOfDay = {
+  nameHe:'האלה הפלסטינית',
+  nameEn:'Pistacia palaestina',
+  emoji:'🌳',
+  region:'ישראל, לבנון, סוריה, טורקיה',
+  climate:'ים-תיכוני · עד 200 מ"מ גשם שנתי',
+  water:'נמוך מאוד · עמידה לבצורת חמורה',
+  urban:'גבוהה · עמידה לזיהום ולחום',
+  height:'4–8 מטר, גדילה איטית',
+  facts:[
+    'פירות אדמדמים קטנים המזינים עופות מהגרים בסתיו וחורף',
+    'שרף האלה שימש לריפוי פצעים ולהגנת עץ במשך אלפי שנים',
+    'עץ בן 100 שנה גדל לגובה 5 מ׳ בלבד — ארכיון חי של האדמה',
+    '"Relict species" — שריד מהיער הים-תיכוני הקדום של ממה שהיה פעם'
+  ],
+  symbol:'בתרבות הערבית-ישראלית, האלה מסמלת שורשים, נצח, ואדמת אבות',
+  tip:'שורשים שאינם פולשים, צל קייצי, ועמידות קיצונית לחום — מין עיר מושלם לרחובות.'
+};
+
+const signalsData = [
+  { icon:'🌡️', text:'ערים עם כיסוי עצים של 30% ומעלה חוות טמפרטורה נמוכה ב-4–8 מעלות ביחס לאזורים ללא עצים.', source:'Urban Heat Island Research, 2024' },
+  { icon:'🌙', text:'צמחי מדבר הפורחים בלילה התפתחו לאתגר לחות נמוכה — נשאי אבקה לילה מתנהלים עם פחות צריכת מים.', source:'Desert Ecology Journal' },
+  { icon:'🌧️', text:'שורש עץ בוגר יכול להחדיר מעל 100 ליטר לאקוויפר בלילה אחד של גשם חזק.', source:'Hydrology Letters, 2024' },
+  { icon:'🫒', text:'עצי זית חיים אלפי שנים — הם ארכיון חי של שינויי האקלים בים-תיכון מאז ומעולם.', source:'Mediterranean Heritage Studies' },
+  { icon:'🧠', text:'חשיפה של 20 דקות ליום לגינה ירוקה מפחיתה רמות קורטיזול (הורמון הסטרס) ב-15% בממוצע.', source:'Biophilia Research, 2024' },
+  { icon:'🐝', text:'דבורת דבש יחידה מבקרת עד 5,000 פרחים ביום. גינות ציבוריות פורחות הן אינפרסטרוקטורה אקולוגית.', source:'Apiculture Science Journal' },
+  { icon:'🌱', text:'גגות ירוקים בעובי 15 ס"מ מפחיתים צריכת אנרגיה לקירור בניינים ב-20–40% בחודשי הקיץ.', source:'Green Building Research' },
+  { icon:'💨', text:'כל דונם יער עירוני סופח כ-150 ק"ג CO₂ לשנה ומנקה מזהמי אוויר מקומיים בצורה יעילה.', source:'Urban Forestry Reports, 2023' }
+];
+
+const mapLocations = [
+  { lat:30.6095, lng:34.8018, title:'מיצפה רמון, ישראל', desc:'שיקום מדבר ואסטרטגיית ייעור עירוני', tag:'מדבר · ישראל', color:'#C07848' },
+  { lat:32.0853, lng:34.7818, title:'תל אביב, ישראל', desc:'מיזמי ייעור עירוני, רחובות ירוקים ומסדרונות אקולוגיים', tag:'עירוני · ישראל', color:'#5A7048' },
+  { lat:31.7683, lng:35.2137, title:'ירושלים, ישראל', desc:'מסדרונות ירוקים עירוניים ושמירת צמחייה מקומית', tag:'עירוני · ישראל', color:'#5A7048' },
+  { lat:1.3521, lng:103.8198, title:'Gardens by the Bay, סינגפור', desc:'פארק עצי הענן — ביופיליה עירונית עתידנית ומרהיבה', tag:'עולם · השראה', color:'#2A7848' },
+  { lat:40.7484, lng:-73.9967, title:'The High Line, ניו יורק', desc:'פארק ציבורי על גשר רכבת נטוש — שימוש חוזר מרהיב', tag:'עולם · עירוני', color:'#5A7048' },
+  { lat:55.6761, lng:12.5683, title:'Superkilen, קופנהגן', desc:'פארק ציבורי מגוון תרבותית — גן של כל העמים', tag:'עולם · עירוני', color:'#5A7048' },
+  { lat:45.4654, lng:9.1859, title:'Bosco Verticale, מילאנו', desc:'יער אנכי — 800 עצים על חזית שני מגדלים', tag:'עולם · ארכיטקטורה', color:'#5A7048' },
+  { lat:37.5665, lng:126.9780, title:'Cheonggyecheon, סיאול', desc:'שיקום נחל עירוני — מכביש מוגבה לגינה מיימית', tag:'עולם · שיקום', color:'#3A6888' },
+  { lat:51.5074, lng:-0.1278, title:'Olympic Park, לונדון', desc:'פארק עירוני שנוצר משיקום שטח תעשייתי פגוע', tag:'עולם · שיקום', color:'#5A7048' },
+  { lat:-37.8136, lng:144.9631, title:'Melbourne Urban Forest', desc:'אסטרטגיית יער עירוני — 3,000 מינים עצים על 480,000 עצים', tag:'עולם · אסטרטגיה', color:'#3A7850' }
+];
+
+const quotes = [
+  '"האדמה מדברת בשפה שאנו רק מתחילים לפענח — בשפת השורשים, הרוח, ובצמחייה שבוחרת לחיות ממש כאן."',
+  '"כל עץ שנושר הוא שאלה — כל עץ שניטע הוא תשובה."',
+  '"המדבר אינו ריק. הוא מלא בשתיקה שדברים עתידיים גדלים בה."',
+  '"עיר שבה אפשר לשמוע ציפורים, היא עיר שאנשיה נושמים."',
+  '"הנוף לא רק מתואר — הוא חי, נושם, ומגיב לכל מה שנוגעים בו."',
+  '"עץ בן מאה שנה עמד בעשרים גלי חום. אנחנו עוד לומדים ממנו."',
+  '"כשאנו שותלים, אנו משקיעים בזמן שאיננו שייך לנו — ואין מתנה גדולה מזו."'
+];
+
+// ============================================================
+// RENDER FUNCTIONS
+// ============================================================
+function renderNews() {
+  const g = document.getElementById('grid-news');
+  g.innerHTML = newsData.map((d,i) => `
+    <div class="card" data-id="${d.id}" data-tags="${d.tags.join(',')}" style="animation-delay:${i*0.07}s">
+      <div class="card-thumb botanical-bg" style="background:${d.grad}">${d.emoji}</div>
+      <div class="card-tags">${d.tags.map((t,j)=>`<span class="tag ${d.tc[j]||''}">${t}</span>`).join('')}</div>
+      <h3 class="card-title">${d.title}</h3>
+      <p class="card-excerpt">${d.excerpt}</p>
+      <div class="card-meta">
+        <span class="card-source">${d.source} · ${d.date}</span>
+        <div class="card-actions">
+          <button class="card-btn" data-bookmark="${d.id}" title="שמור">🔖</button>
+          <button class="card-btn card-expand-btn" data-expand>+</button>
+        </div>
+      </div>
+      <div class="card-expanded"><p>${d.more}</p></div>
+    </div>`).join('');
+  document.getElementById('count-news').textContent = `${newsData.length} פריטים`;
+}
+
+function renderResearch() {
+  const g = document.getElementById('grid-research');
+  g.innerHTML = researchData.map((d,i) => `
+    <div class="card research-card" data-id="${d.id}" data-tags="${d.tags.join(',')}" style="animation-delay:${i*0.09}s">
+      <div class="card-tags">${d.tags.map((t,j)=>`<span class="tag ${d.tc[j]||''}">${t}</span>`).join('')}</div>
+      <h3 class="card-title">${d.title}</h3>
+      <p class="card-excerpt" style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.5rem">${d.authors}</p>
+      <div class="insight-box"><h4>💡 תובנה מרכזית</h4><p>${d.insight}</p></div>
+      <div class="insight-box imp"><h4>🌍 למה זה חשוב</h4><p>${d.matters}</p></div>
+      <div class="card-expanded">
+        <div class="insight-box" style="margin-top:0"><h4>🛠️ יישום מעשי</h4><p>${d.application}</p></div>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.6rem">רלוונטי: ${d.relevance} · ${d.journal} · ${d.date}</p>
+      </div>
+      <div class="card-meta" style="margin-top:0.8rem">
+        <span class="card-source">${d.journal} · ${d.date}</span>
+        <div class="card-actions">
+          <button class="card-btn" data-bookmark="${d.id}">🔖</button>
+          <button class="card-btn card-expand-btn" data-expand>+</button>
+        </div>
+      </div>
+    </div>`).join('');
+  document.getElementById('count-research').textContent = `${researchData.length} מחקרים`;
+}
+
+function renderPlants() {
+  const g = document.getElementById('grid-plants');
+  g.innerHTML = plantData.map((d,i) => `
+    <div class="card plant-card" data-id="${d.id}" data-tags="${d.tags.join(',')}" style="animation-delay:${i*0.07}s">
+      <div class="plant-header">
+        <div class="plant-icon-wrap">${d.icon}</div>
+        <div>
+          <div class="card-tags">${d.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+          <h3 class="card-title" style="margin:0.3rem 0 0">${d.title}</h3>
+        </div>
+      </div>
+      <p class="card-excerpt">${d.excerpt}</p>
+      <div class="plant-pills">${d.pills.map(p=>`<span class="plant-pill">${p}</span>`).join('')}</div>
+      <div class="card-expanded">
+        <p>${d.more}</p>
+        <ul>${d.tips.map(t=>`<li>${t}</li>`).join('')}</ul>
+      </div>
+      <div class="card-meta" style="margin-top:0.8rem">
+        <span>טיפים מעשיים</span>
+        <div class="card-actions">
+          <button class="card-btn" data-bookmark="${d.id}">🔖</button>
+          <button class="card-btn card-expand-btn" data-expand>+</button>
+        </div>
+      </div>
+    </div>`).join('');
+  document.getElementById('count-plants').textContent = `${plantData.length} נושאים`;
+}
+
+function renderDesert() {
+  const g = document.getElementById('grid-desert');
+  g.innerHTML = desertData.map((d,i) => `
+    <div class="card desert-card" data-id="${d.id}" data-tags="${d.tags.join(',')}" style="animation-delay:${i*0.08}s">
+      <div class="card-thumb" style="background:${d.grad}">${d.emoji}</div>
+      <div class="card-tags">${d.tags.map((t,j)=>`<span class="tag ${d.tc[j]||''}">${t}</span>`).join('')}</div>
+      <h3 class="card-title">${d.title}</h3>
+      <p class="card-excerpt">${d.excerpt}</p>
+      <div class="card-expanded"><p>${d.more}</p></div>
+      <div class="card-meta">
+        <span>מדבר · ישראל</span>
+        <div class="card-actions">
+          <button class="card-btn" data-bookmark="${d.id}">🔖</button>
+          <button class="card-btn card-expand-btn" data-expand>+</button>
+        </div>
+      </div>
+    </div>`).join('');
+  document.getElementById('count-desert').textContent = `${desertData.length} פרויקטים`;
+}
+
+function renderPoetry() {
+  const g = document.getElementById('grid-poetry');
+  g.innerHTML = poetryData.map((d,i) => `
+    <div class="card poetry-card" data-id="${d.id}" data-tags="${d.tags.join(',')}" style="animation-delay:${i*0.08}s">
+      <div class="poetry-thumb" style="background:${d.grad}">${d.emoji}</div>
+      <div class="poetry-inner">
+        <div class="card-tags">${d.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+        <div class="poetry-location">📍 ${d.location}</div>
+        <h3 class="card-title">${d.title}</h3>
+        <p class="poetry-philosophy">${d.philosophy}</p>
+        <div class="mood-words">${d.mood.map(m=>`<span class="mood-word">${m}</span>`).join('')}</div>
+        <div class="card-meta" style="margin-top:1rem">
+          <span style="font-size:0.72rem;color:var(--text-muted)">${d.materials}</span>
+          <button class="card-btn" data-bookmark="${d.id}">🔖</button>
+        </div>
+      </div>
+    </div>`).join('');
+  document.getElementById('count-poetry').textContent = `${poetryData.length} פרויקטים`;
+}
+
+function renderTree() {
+  const d = treeOfDay;
+  document.getElementById('tree-content').innerHTML = `
+    <div class="tree-layout">
+      <div class="tree-visual">${d.emoji}</div>
+      <div class="tree-info">
+        <h2 class="tree-name-he">${d.nameHe}</h2>
+        <p class="tree-name-en en">${d.nameEn}</p>
+        <div class="tree-stats">
+          <div class="tree-stat"><div class="tree-stat-label">אזור מוצא</div><div class="tree-stat-value">${d.region}</div></div>
+          <div class="tree-stat"><div class="tree-stat-label">אקלים</div><div class="tree-stat-value">${d.climate}</div></div>
+          <div class="tree-stat"><div class="tree-stat-label">צרכי מים</div><div class="tree-stat-value">${d.water}</div></div>
+          <div class="tree-stat"><div class="tree-stat-label">עמידות עירונית</div><div class="tree-stat-value">${d.urban}</div></div>
+          <div class="tree-stat"><div class="tree-stat-label">גובה</div><div class="tree-stat-value">${d.height}</div></div>
+        </div>
+        <ul class="tree-facts">${d.facts.map(f=>`<li>${f}</li>`).join('')}</ul>
+        <div class="tree-symbol">🌿 <em>${d.symbol}</em></div>
+        <div class="insight-box" style="margin-top:1rem"><h4>💡 טיפ לנטיעה עירונית</h4><p>${d.tip}</p></div>
+      </div>
+    </div>`;
+}
+
+function renderSignals() {
+  const g = document.getElementById('grid-signals');
+  g.innerHTML = signalsData.map((d,i) => `
+    <div class="signal-card" style="animation-delay:${i*0.06}s">
+      <span class="signal-icon">${d.icon}</span>
+      <p class="signal-text">${d.text}</p>
+      <p class="signal-source">${d.source}</p>
+    </div>`).join('');
+}
+
+// ============================================================
+// FILTERS & SEARCH
+// ============================================================
+const state = { filters:[], search:'', mode:'all' };
+
+function allCards() {
+  return document.querySelectorAll('.card');
+}
+
+function applyFilters() {
+  const s = state.search.toLowerCase();
+  const f = state.filters;
+  allCards().forEach(card => {
+    const tags = (card.dataset.tags || '').toLowerCase();
+    const text = card.innerText.toLowerCase();
+    const matchFilter = f.length === 0 || f.includes('all') || f.some(filt => tags.includes(filt.toLowerCase()) || text.includes(filt.toLowerCase()));
+    const matchSearch = !s || text.includes(s);
+    card.classList.toggle('card-hidden', !(matchFilter && matchSearch));
+  });
+  // Update no-results
+  document.querySelectorAll('.cards-grid').forEach(grid => {
+    let noRes = grid.querySelector('.no-results');
+    const visible = [...grid.querySelectorAll('.card:not(.card-hidden)')].length;
+    if (visible === 0) {
+      if (!noRes) { noRes = document.createElement('div'); noRes.className = 'no-results'; noRes.textContent = 'אין תוצאות מתאימות לסינון הנוכחי.'; grid.appendChild(noRes); }
+    } else { if (noRes) noRes.remove(); }
+  });
+}
+
+function initFilters() {
+  document.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const f = btn.dataset.filter;
+      if (f === 'all') {
+        state.filters = [];
+        document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      } else {
+        document.querySelector('[data-filter="all"]').classList.remove('active');
+        btn.classList.toggle('active');
+        const idx = state.filters.indexOf(f);
+        if (idx > -1) state.filters.splice(idx, 1); else state.filters.push(f);
+        if (state.filters.length === 0) document.querySelector('[data-filter="all"]').classList.add('active');
+      }
+      applyFilters();
+    });
+  });
+  document.getElementById('clear-filters').addEventListener('click', () => {
+    state.filters = [];
+    document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-filter="all"]').classList.add('active');
+    applyFilters();
+  });
+}
+
+function initSearch() {
+  document.getElementById('search-input').addEventListener('input', e => {
+    state.search = e.target.value;
+    applyFilters();
+  });
+}
+
+// ============================================================
+// MODE TOGGLE
+// ============================================================
+function initModeToggle() {
+  const sectionMap = {
+    all: ['sec-news','sec-research','sec-plants','sec-desert','sec-poetry','sec-tree','sec-signals'],
+    research: ['sec-research'],
+    inspiration: ['sec-poetry','sec-signals','sec-tree'],
+    practical: ['sec-plants','sec-desert']
+  };
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const m = btn.dataset.mode;
+      state.mode = m;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const show = sectionMap[m];
+      document.querySelectorAll('.section').forEach(sec => {
+        sec.classList.toggle('hidden-section', !show.includes(sec.id));
+      });
+    });
+  });
+}
+
+// ============================================================
+// CARD INTERACTIONS
+// ============================================================
+function initCards() {
+  document.addEventListener('click', e => {
+    // Expand
+    const expandBtn = e.target.closest('[data-expand]');
+    if (expandBtn) {
+      const card = expandBtn.closest('.card');
+      card.classList.toggle('open');
+      expandBtn.textContent = card.classList.contains('open') ? '−' : '+';
+      return;
+    }
+    // Bookmark
+    const bkBtn = e.target.closest('[data-bookmark]');
+    if (bkBtn) {
+      const id = bkBtn.dataset.bookmark;
+      bkBtn.classList.toggle('bookmarked');
+      const card = bkBtn.closest('.card');
+      if (card) card.classList.toggle('bookmarked');
+      return;
+    }
+  });
+}
+
+// ============================================================
+// PARTICLES
+// ============================================================
+function initParticles() {
+  const canvas = document.getElementById('pollen-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles;
+
+  function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+
+  function Particle() {
+    this.reset = function() {
+      this.x = Math.random() * W;
+      this.y = H + Math.random() * 100;
+      this.r = 1 + Math.random() * 3;
+      this.vx = (Math.random() - 0.5) * 0.4;
+      this.vy = -(0.3 + Math.random() * 0.7);
+      this.alpha = 0;
+      this.targetAlpha = 0.15 + Math.random() * 0.35;
+      this.life = 0;
+      this.maxLife = 300 + Math.random() * 400;
+      const colors = ['rgba(90,112,72,', 'rgba(192,120,72,', 'rgba(200,185,145,', 'rgba(152,184,200,'];
+      this.colorBase = colors[Math.floor(Math.random() * colors.length)];
+      this.wobble = Math.random() * Math.PI * 2;
+      this.wobbleSpeed = 0.01 + Math.random() * 0.02;
+    };
+    this.reset();
+    this.y = Math.random() * H;
+    this.alpha = Math.random() * 0.3;
+    this.life = Math.random() * this.maxLife;
+  }
+
+  function init() {
+    resize();
+    particles = Array.from({length:45}, () => new Particle());
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => {
+      p.life++;
+      p.wobble += p.wobbleSpeed;
+      p.x += p.vx + Math.sin(p.wobble) * 0.15;
+      p.y += p.vy;
+      if (p.life < 60) p.alpha = (p.life / 60) * p.targetAlpha;
+      else if (p.life > p.maxLife - 60) p.alpha = ((p.maxLife - p.life) / 60) * p.targetAlpha;
+      else p.alpha = p.targetAlpha;
+      if (p.life >= p.maxLife || p.y < -20) p.reset();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.colorBase + p.alpha + ')';
+      ctx.fill();
+      // Cross shape for some particles
+      if (p.r > 2.5) {
+        ctx.strokeStyle = p.colorBase + (p.alpha * 0.6) + ')';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(p.x - p.r * 1.8, p.y); ctx.lineTo(p.x + p.r * 1.8, p.y);
+        ctx.moveTo(p.x, p.y - p.r * 1.8); ctx.lineTo(p.x, p.y + p.r * 1.8);
+        ctx.stroke();
+      }
+    });
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', () => { resize(); });
+  init();
+  draw();
+}
+
+// ============================================================
+// CLOCK & DATE
+// ============================================================
+function initClock() {
+  const days = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  const months = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  const weatherMoods = [
+    'בוקר צלול, רוח קלה מן הדרום',
+    'שמש עזה, הכי טוב להיות בצל',
+    'ענני חלקית, אוויר נעים',
+    'גל חום — הצמחים זקוקים לצל',
+    'רוח מזרחית — פריחת אבקה',
+    'לחות נמוכה, אוויר מדברי יבש',
+    'ערב רך, מתאים לטיול בפארק'
+  ];
+  function update() {
+    const now = new Date();
+    const d = document.getElementById('hero-date');
+    const w = document.getElementById('hero-weather');
+    if (d) d.textContent = `יום ${days[now.getDay()]}, ${now.getDate()} ב${months[now.getMonth()]} ${now.getFullYear()}`;
+    if (w) w.textContent = weatherMoods[now.getDay()];
+  }
+  update();
+  // Rotate quote
+  const q = document.getElementById('hero-quote');
+  if (q) q.textContent = quotes[new Date().getDay() % quotes.length];
+}
+
+// ============================================================
+// MAP
+// ============================================================
+function initMap() {
+  const map = L.map('landscape-map', { zoomControl:true, scrollWheelZoom:false }).setView([30, 20], 2);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap contributors, © CARTO',
+    maxZoom: 18
+  }).addTo(map);
+
+  mapLocations.forEach(loc => {
+    const marker = L.circleMarker([loc.lat, loc.lng], {
+      radius: 8,
+      fillColor: loc.color,
+      color: '#fff',
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.85
+    }).addTo(map);
+
+    marker.bindPopup(`
+      <div style="min-width:180px;padding:0.2rem">
+        <div class="map-pop-title">${loc.title}</div>
+        <div class="map-pop-desc">${loc.desc}</div>
+        <div class="map-pop-tag">${loc.tag}</div>
+      </div>`, { direction: 'top', offset: L.point(0, -6) });
+
+    marker.on('mouseover', function() { this.openPopup(); });
+  });
+}
+
+// ============================================================
+// AMBIENT
+// ============================================================
+function initAmbient() {
+  const toggle = document.getElementById('ambient-toggle');
+  const panel = document.getElementById('ambient-panel');
+  const wave = document.getElementById('sound-wave');
+  let activeSound = null;
+
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    panel.classList.toggle('open');
+    toggle.classList.toggle('active');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.ambient-widget')) {
+      panel.classList.remove('open');
+      toggle.classList.remove('active');
+    }
+  });
+
+  document.querySelectorAll('.amb-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const s = btn.dataset.sound;
+      if (activeSound === s) {
+        btn.classList.remove('active');
+        activeSound = null;
+        wave.classList.remove('playing');
+      } else {
+        document.querySelectorAll('.amb-opt').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeSound = s;
+        wave.classList.add('playing');
+      }
+    });
+  });
+}
+
+// ============================================================
+// SCROLL TOP & PROGRESS
+// ============================================================
+function initScroll() {
+  const btn = document.getElementById('scroll-top-btn');
+  const bar = document.getElementById('progress-bar');
+  window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY;
+    btn.classList.toggle('visible', scrolled > 600);
+    const docH = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = (docH > 0 ? (scrolled / docH) * 100 : 0) + '%';
+  });
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+}
+
+// ============================================================
+// NAV SECTION LINKS
+// ============================================================
+function initNavSections() {
+  // highlight nav on scroll (optional: section quick nav)
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  initParticles();
+  initClock();
+  renderNews();
+  renderResearch();
+  renderPlants();
+  renderDesert();
+  renderPoetry();
+  renderTree();
+  renderSignals();
+  initFilters();
+  initSearch();
+  initModeToggle();
+  initCards();
+  initMap();
+  initAmbient();
+  initScroll();
+});
+</script>
+</body>
+</html>
