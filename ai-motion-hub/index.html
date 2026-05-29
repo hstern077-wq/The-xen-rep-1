@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Motion Hub</title>
+  <link rel="stylesheet" href="./css/main.css"/>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── Header ── -->
+    <header class="panel-header">
+      <div class="panel-logo">⚡</div>
+      <span class="panel-title">AI Motion Hub</span>
+      <span class="panel-badge">BETA</span>
+    </header>
+
+    <!-- ── Scrollable Body ── -->
+    <div class="panel-scroll">
+
+      <!-- Sequence Info -->
+      <div>
+        <div class="section-label">Active Sequence</div>
+        <div class="field-group" style="padding: 10px 12px;">
+          <div class="seq-info">
+            <div class="seq-chip">
+              <div class="seq-chip-label">FPS</div>
+              <div class="seq-chip-value" id="seq-fps">—</div>
+            </div>
+            <div class="seq-chip">
+              <div class="seq-chip-label">Width</div>
+              <div class="seq-chip-value" id="seq-w">—</div>
+            </div>
+            <div class="seq-chip">
+              <div class="seq-chip-label">Height</div>
+              <div class="seq-chip-value" id="seq-h">—</div>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            <button class="btn btn-secondary" id="btn-refresh-seq" style="width:100%; font-size:11px; padding:5px 10px;">
+              ↻ Refresh Sequence Info
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reference Frame -->
+      <div>
+        <div class="section-label">Reference Frame (Image-to-Video Seed)</div>
+        <div class="field-group">
+          <div class="reference-area">
+            <div class="reference-preview" id="reference-preview">
+              <span class="preview-placeholder-icon">🎞</span>
+              <span class="preview-placeholder-text">No frame captured</span>
+              <span class="reference-badge" id="ref-badge">Frame captured</span>
+            </div>
+            <div class="reference-actions">
+              <button class="btn btn-secondary" id="btn-grab-frame" style="flex:1;">
+                📷 Grab Current Frame
+              </button>
+              <button class="btn btn-ghost" id="btn-clear-ref" title="Clear reference">✕</button>
+            </div>
+            <div class="toggle-row" style="padding: 2px 0 0;">
+              <span class="toggle-label">Use as seed</span>
+              <label class="toggle">
+                <input type="checkbox" id="toggle-use-seed" checked/>
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Style Presets -->
+      <div>
+        <div class="section-label">Style Preset</div>
+        <div class="preset-grid">
+
+          <button class="preset-btn active" data-preset="cinematic">
+            <span class="preset-check">✓</span>
+            <span class="preset-icon">🎬</span>
+            <span class="preset-name">Cinematic</span>
+            <span class="preset-desc">Film grain · Anamorphic</span>
+          </button>
+
+          <button class="preset-btn" data-preset="motion">
+            <span class="preset-check">✓</span>
+            <span class="preset-icon">⚡</span>
+            <span class="preset-name">Motion Graphics</span>
+            <span class="preset-desc">Bold · Geometric · VFX</span>
+          </button>
+
+          <button class="preset-btn" data-preset="anime">
+            <span class="preset-check">✓</span>
+            <span class="preset-icon">🌸</span>
+            <span class="preset-name">Anime</span>
+            <span class="preset-desc">Stylized · Vivid · 2.5D</span>
+          </button>
+
+          <button class="preset-btn" data-preset="realistic">
+            <span class="preset-check">✓</span>
+            <span class="preset-icon">🌍</span>
+            <span class="preset-name">Realistic</span>
+            <span class="preset-desc">Photorealistic · Natural</span>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Prompt -->
+      <div>
+        <div class="section-label">Prompt</div>
+        <div class="prompt-wrap">
+          <textarea
+            class="prompt-textarea"
+            id="prompt-input"
+            maxlength="800"
+            placeholder="Describe your motion… e.g. 'A cinematic drone shot sweeping over a misty mountain range at golden hour, slow push forward'"></textarea>
+          <span class="prompt-char-count" id="char-count">0 / 800</span>
+        </div>
+      </div>
+
+      <!-- Advanced Options (collapsed) -->
+      <div>
+        <div class="section-label" style="cursor:pointer; display:flex; align-items:center; gap:5px;" id="advanced-toggle">
+          <span id="advanced-arrow">▶</span> Advanced Options
+        </div>
+        <div id="advanced-panel" style="display:none;">
+          <div class="field-group" style="margin-top:6px; display:flex; flex-direction:column; gap:10px;">
+            <div>
+              <div class="section-label" style="margin-bottom:4px;">Duration</div>
+              <select class="spectrum-select" id="sel-duration">
+                <option value="3">3 seconds</option>
+                <option value="5" selected>5 seconds</option>
+                <option value="8">8 seconds</option>
+                <option value="10">10 seconds</option>
+              </select>
+            </div>
+            <div>
+              <div class="section-label" style="margin-bottom:4px;">Motion Strength</div>
+              <select class="spectrum-select" id="sel-motion">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <div class="toggle-row">
+              <span class="toggle-label">Auto-import to Premiere</span>
+              <label class="toggle">
+                <input type="checkbox" id="toggle-auto-import" checked/>
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <span class="toggle-label">Match sequence FPS</span>
+              <label class="toggle">
+                <input type="checkbox" id="toggle-match-fps" checked/>
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generate -->
+      <button class="btn btn-generate btn-full" id="btn-generate">
+        ⚡ Generate Video
+      </button>
+
+      <!-- Progress -->
+      <div class="progress-section" id="progress-section">
+        <div class="field-group">
+          <div class="progress-header">
+            <div class="progress-label">
+              <div class="progress-spinner"></div>
+              <span id="progress-label-text">Initializing…</span>
+            </div>
+            <span class="progress-pct" id="progress-pct">0%</span>
+          </div>
+          <div class="progress-track" style="margin: 10px 0 8px;">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <div class="progress-status" id="progress-status">Sending request to Higgsfield API…</div>
+          <div class="poll-row" id="poll-row" style="display:none; margin-top:6px;">
+            <div class="poll-dot"></div>
+            <span id="poll-countdown">Next check in 5s…</span>
+          </div>
+        </div>
+        <div class="log-output visible" id="log-output"></div>
+        <button class="btn btn-danger" id="btn-cancel" style="align-self:flex-end; font-size:11px; padding:5px 12px;">
+          ✕ Cancel
+        </button>
+      </div>
+
+      <!-- Result -->
+      <div class="result-card" id="result-card">
+        <div class="result-title">✓ Generation Complete</div>
+        <div class="result-path" id="result-path">—</div>
+        <div class="result-actions">
+          <button class="btn btn-primary" id="btn-import-premiere" style="flex:1; font-size:11px;">
+            Import to Premiere
+          </button>
+          <button class="btn btn-secondary" id="btn-reveal-finder" style="font-size:11px;">
+            Show in Folder
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /panel-scroll -->
+
+    <!-- ── Footer ── -->
+    <footer class="panel-footer">
+      <div class="footer-status">
+        <div class="status-dot ready" id="status-dot"></div>
+        <span id="status-text">Ready</span>
+      </div>
+      <button class="btn btn-ghost" id="btn-settings" style="padding:3px 8px; font-size:11px;">
+        ⚙ Settings
+      </button>
+    </footer>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+  </div><!-- /app -->
+
+  <!-- CSInterface must be first -->
+  <script src="./js/CSInterface.js"></script>
+  <script src="./js/main.js"></script>
+</body>
+</html>
