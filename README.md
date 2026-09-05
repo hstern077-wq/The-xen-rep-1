@@ -32,3 +32,29 @@ Guest takes selfie → Face detected → Compared against indexed wedding photos
 ```
 
 All processing is local — no cloud accounts needed.
+
+## fal.ai MCP server (optional, for AI tooling)
+
+This repo includes a project-scoped `.mcp.json` that wires up the [fal.ai](https://fal.ai) MCP server over HTTP for use with Claude Code:
+
+```json
+{
+  "mcpServers": {
+    "fal-ai": {
+      "type": "http",
+      "url": "https://mcp.fal.ai/mcp",
+      "headers": {
+        "Authorization": "Bearer ${FAL_KEY}"
+      }
+    }
+  }
+}
+```
+
+Set your fal.ai API key as an environment variable before starting Claude Code so it can be substituted into the header:
+
+```bash
+export FAL_KEY=your_fal_api_key
+```
+
+Never commit your actual API key — only the `${FAL_KEY}` placeholder belongs in `.mcp.json`.
